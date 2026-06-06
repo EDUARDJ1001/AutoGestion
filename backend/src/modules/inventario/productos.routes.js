@@ -38,10 +38,10 @@ const productoUpdateValidators = [
 ];
 
 router.use(authMiddleware);
-router.use(roleMiddleware('Admin', 'Cajero'));
 
 router.get(
   '/',
+  roleMiddleware('Admin', 'Cajero', 'Mecanico'),
   [
     query('estado').optional().isIn(estadosValidos).withMessage('Estado invalido'),
     query('categoria_producto_id').optional().isInt({ min: 1 }).withMessage('categoria_producto_id debe ser entero'),
@@ -53,6 +53,7 @@ router.get(
 
 router.get(
   '/:id',
+  roleMiddleware('Admin', 'Cajero', 'Mecanico'),
   [
     param('id').isInt({ min: 1 }).withMessage('ID invalido')
   ],
@@ -62,6 +63,7 @@ router.get(
 
 router.post(
   '/',
+  roleMiddleware('Admin'),
   productoCreateValidators,
   validateRequest,
   asyncHandler(inventarioController.createProducto)
@@ -69,6 +71,7 @@ router.post(
 
 router.put(
   '/:id',
+  roleMiddleware('Admin'),
   productoUpdateValidators,
   validateRequest,
   asyncHandler(inventarioController.updateProducto)
@@ -76,6 +79,7 @@ router.put(
 
 router.patch(
   '/:id/estado',
+  roleMiddleware('Admin'),
   [
     param('id').isInt({ min: 1 }).withMessage('ID invalido'),
     body('estado').isIn(estadosValidos).withMessage('Estado invalido')

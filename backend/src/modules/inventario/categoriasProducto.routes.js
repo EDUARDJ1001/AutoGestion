@@ -10,7 +10,7 @@ const router = Router();
 const estadosValidos = ['Activo', 'Inactivo'];
 
 router.use(authMiddleware);
-router.use(roleMiddleware('Admin', 'Cajero'));
+router.use(roleMiddleware('Admin', 'Cajero', 'Mecanico'));
 
 router.get(
   '/',

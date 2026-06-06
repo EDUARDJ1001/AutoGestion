@@ -43,3 +43,10 @@ Para esta etapa se agrego una migracion minima para que los servicios asignados 
 ```text
 backend/db/migrations/001_visita_servicios_precios_dinamicos.sql
 ```
+
+Puedes aplicar las migraciones con:
+
+```powershell
+cd backend
+npm run migrate
+```
