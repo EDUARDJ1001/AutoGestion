@@ -122,7 +122,7 @@ export const moduleConfig = {
       { name: 'categoria_servicio_id', label: 'Categoria', type: 'select', options: categoriasServicio.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
       { name: 'nombre', label: 'Nombre', required: true },
       { name: 'descripcion', label: 'Descripcion', type: 'textarea' },
-      { name: 'precio_sugerido', label: 'Precio sugerido', type: 'number', min: 0, step: '0.01', valueType: 'number' },
+      { name: 'precio_sugerido', label: 'Precio sugerido', type: 'number', min: 0, step: 1, valueType: 'integer' },
       { name: 'tiempo_estimado_minutos', label: 'Tiempo estimado min', type: 'number', min: 1, valueType: 'number' },
       { name: 'estado', label: 'Estado', type: 'select', options: estadosGenerales, defaultValue: 'Activo' }
     ]
@@ -149,8 +149,8 @@ export const moduleConfig = {
       { name: 'unidad_medida', label: 'Unidad de medida', defaultValue: 'Unidad' },
       { name: 'stock_inicial', label: 'Stock inicial', type: 'number', min: 0, valueType: 'number', hideOnEdit: true },
       { name: 'stock_minimo', label: 'Stock minimo', type: 'number', min: 0, valueType: 'number' },
-      { name: 'costo_promedio', label: 'Costo promedio', type: 'number', min: 0, step: '0.01', valueType: 'number' },
-      { name: 'precio_referencia', label: 'Precio referencia', type: 'number', min: 0, step: '0.01', valueType: 'number' },
+      { name: 'costo_promedio', label: 'Costo promedio', type: 'number', min: 0, step: 1, valueType: 'integer' },
+      { name: 'precio_referencia', label: 'Precio referencia', type: 'number', min: 0, step: 1, valueType: 'integer' },
       { name: 'estado', label: 'Estado', type: 'select', options: estadosGenerales, defaultValue: 'Activo' }
     ]
   },
@@ -197,6 +197,11 @@ export const normalizePayload = (form, fields, mode) => {
 
     if (field.valueType === 'number') {
       acc[field.name] = Number(rawValue);
+      return acc;
+    }
+
+    if (field.valueType === 'integer') {
+      acc[field.name] = Number.parseInt(rawValue, 10);
       return acc;
     }
 

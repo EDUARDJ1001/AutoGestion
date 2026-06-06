@@ -1,5 +1,14 @@
 function FormField({ field, mode, value, onChange }) {
   const required = Boolean(field.required || (mode === 'create' && field.requiredOnCreate));
+  const integerOnly = field.valueType === 'integer';
+  const handleInputChange = (event) => {
+    const integerPart = event.target.value.split(/[.,]/)[0];
+    const nextValue = integerOnly
+      ? integerPart.replace(/[^\d]/g, '')
+      : event.target.value;
+
+    onChange(nextValue);
+  };
 
   if (field.type === 'textarea') {
     return (
@@ -43,10 +52,17 @@ function FormField({ field, mode, value, onChange }) {
       <input
         type={field.type || 'text'}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={handleInputChange}
+        onKeyDown={(event) => {
+          if (integerOnly && ['.', ',', 'e', 'E', '+', '-'].includes(event.key)) {
+            event.preventDefault();
+          }
+        }}
         required={required}
         min={field.min}
-        step={field.step}
+        step={integerOnly ? 1 : field.step}
+        inputMode={integerOnly ? 'numeric' : undefined}
+        pattern={integerOnly ? '[0-9]*' : undefined}
         minLength={field.minLength}
       />
     </label>
