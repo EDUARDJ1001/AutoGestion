@@ -96,7 +96,10 @@ button {
 }
 
 .login-form input,
-.search-box input {
+.search-box input,
+.field input,
+.field select,
+.field textarea {
   width: 100%;
   border: 1px solid #ccd6df;
   background: #ffffff;
@@ -105,13 +108,18 @@ button {
   outline: none;
 }
 
-.login-form input {
+.login-form input,
+.field input,
+.field select {
   height: 44px;
   padding: 0 12px;
 }
 
 .login-form input:focus,
-.search-box input:focus {
+.search-box input:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
   border-color: #265c7b;
   box-shadow: 0 0 0 3px rgba(38, 92, 123, 0.12);
 }
@@ -162,6 +170,10 @@ button {
   color: #263745;
   border: 1px solid #ccd6df;
   padding: 0 14px;
+}
+
+.compact-button {
+  min-width: 118px;
 }
 
 .icon-button {
@@ -388,6 +400,7 @@ button {
 .toolbar {
   gap: 12px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .search-box {
@@ -442,6 +455,18 @@ td {
   font-size: 14px;
 }
 
+.row-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.table-action {
+  width: 34px;
+  min-height: 34px;
+  border: 1px solid #dce3ea;
+  background: #ffffff;
+}
+
 .empty-state {
   min-height: 128px;
   display: grid;
@@ -452,6 +477,116 @@ td {
   border: 1px dashed #ccd6df;
   text-align: center;
   padding: 18px;
+}
+
+.modal-layer {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(23, 32, 42, 0.5);
+}
+
+.modal-panel {
+  width: min(100%, 820px);
+  max-height: min(92vh, 820px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(23, 32, 42, 0.22);
+}
+
+.status-panel {
+  width: min(100%, 520px);
+}
+
+.modal-header {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.crud-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  color: #405160;
+  font-size: 14px;
+}
+
+.field-wide,
+.full-row,
+.modal-actions {
+  grid-column: 1 / -1;
+}
+
+.field textarea {
+  min-height: 94px;
+  resize: vertical;
+  padding: 10px 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.toast {
+  position: fixed;
+  z-index: 60;
+  right: 20px;
+  bottom: 20px;
+  min-height: 44px;
+  max-width: min(420px, calc(100vw - 32px));
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid #b8dfc8;
+  border-radius: 6px;
+  color: #1f603c;
+  background: #effaf3;
+  box-shadow: 0 12px 34px rgba(24, 39, 56, 0.14);
+}
+
+.toast-danger {
+  color: #9c2f32;
+  border-color: #f0cccc;
+  background: #fff1f1;
+}
+
+.spin {
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mobile-only {
@@ -504,6 +639,47 @@ td {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+  }
+
+  table {
+    min-width: 0;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 10px;
+    border: 1px solid #edf1f5;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  td {
+    min-height: 42px;
+    height: auto;
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  td::before {
+    content: attr(data-label);
+    color: #657484;
+    font-weight: 700;
+  }
 }
 
 @media (max-width: 620px) {
@@ -532,5 +708,29 @@ td {
 
   .login-panel {
     padding: 24px;
+  }
+
+  .crud-form {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-layer {
+    padding: 10px;
+    place-items: end center;
+  }
+
+  .modal-panel {
+    max-height: 94vh;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .primary-button,
+  .modal-actions .secondary-button,
+  .toolbar .primary-button,
+  .search-box {
+    width: 100%;
   }
 }

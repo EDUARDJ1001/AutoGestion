@@ -44,6 +44,7 @@ export const login = (credentials) => apiRequest('/auth/login', {
 export const getModuleData = (moduleKey, token) => {
   const paths = {
     dashboard: '/dashboard/resumen',
+    usuarios: '/usuarios',
     clientes: '/clientes',
     vehiculos: '/vehiculos',
     visitas: '/visitas',
@@ -54,3 +55,9 @@ export const getModuleData = (moduleKey, token) => {
 
   return apiRequest(paths[moduleKey], { token });
 };
+
+export const crudRequest = ({ path, token, method, body }) => apiRequest(path, {
+  token,
+  method,
+  body
+});
