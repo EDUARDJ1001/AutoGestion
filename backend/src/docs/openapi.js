@@ -110,7 +110,8 @@ const openapi = {
     { name: 'Vehiculos' },
     { name: 'Servicios' },
     { name: 'Visitas' },
-    { name: 'Inventario' }
+    { name: 'Inventario' },
+    { name: 'Dashboard' }
   ],
   components: {
     securitySchemes: {
@@ -685,6 +686,31 @@ const openapi = {
       get: {
         tags: ['Inventario'],
         summary: 'Lista stock bajo desde vista_stock_bajo',
+        security: authRequired,
+        responses: { 200: success() }
+      }
+    },
+    '/dashboard/visitas-activas': {
+      get: {
+        tags: ['Dashboard'],
+        summary: 'Lista visitas activas desde vista_dashboard_visitas_activas',
+        security: authRequired,
+        responses: { 200: success() }
+      }
+    },
+    '/dashboard/resumen': {
+      get: {
+        tags: ['Dashboard'],
+        summary: 'Obtiene tarjetas y resumen general del dashboard',
+        description: 'Incluye contadores de visitas por estado, indicadores principales, inventario y listas cortas para la pantalla inicial.',
+        security: authRequired,
+        responses: { 200: success() }
+      }
+    },
+    '/dashboard/stock-bajo': {
+      get: {
+        tags: ['Dashboard'],
+        summary: 'Lista productos con stock bajo desde vista_stock_bajo',
         security: authRequired,
         responses: { 200: success() }
       }
