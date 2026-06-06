@@ -5,6 +5,7 @@ const asyncHandler = require('../../utils/asyncHandler');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const roleMiddleware = require('../../middlewares/roleMiddleware');
 const validateRequest = require('../../middlewares/validateRequest');
+const { upload, setUploadFolder } = require('../../middlewares/uploadMiddleware');
 
 const router = Router();
 
@@ -19,6 +20,7 @@ const estadosVisita = [
   'Entregado',
   'Cancelado'
 ];
+const tiposFoto = ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'];
 
 const visitaCreateValidators = [
   body('cliente_id').isInt({ min: 1 }).withMessage('cliente_id es requerido'),
@@ -149,6 +151,19 @@ router.post(
   ],
   validateRequest,
   asyncHandler(visitasController.addProductoUsado)
+);
+
+router.post(
+  '/:id/fotos',
+  setUploadFolder('visitas'),
+  upload.single('foto'),
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('tipo').optional().isIn(tiposFoto).withMessage('Tipo de foto invalido'),
+    body('descripcion').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(visitasController.addFoto)
 );
 
 module.exports = router;

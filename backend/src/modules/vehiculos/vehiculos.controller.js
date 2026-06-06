@@ -1,5 +1,6 @@
 const vehiculosModel = require('./vehiculos.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
+const { cleanupUploadedFile } = require('../../middlewares/uploadMiddleware');
 
 const normalizeNullableString = (value, uppercase = false) => {
   if (value === undefined) {
@@ -97,8 +98,11 @@ const getVehiculo = async (req, res) => {
     return errorResponse(res, 'Vehiculo no encontrado', undefined, 404);
   }
 
+  const fotos = await vehiculosModel.getFotos(vehiculo.id);
+
   return successResponse(res, 'Vehiculo obtenido correctamente', {
-    vehiculo
+    vehiculo,
+    fotos
   });
 };
 
@@ -153,6 +157,7 @@ const getHistorial = async (req, res) => {
   const vehiculo = await vehiculosModel.findById(vehiculoId);
 
   if (!vehiculo) {
+    cleanupUploadedFile(req.file);
     return errorResponse(res, 'Vehiculo no encontrado', undefined, 404);
   }
 
@@ -164,11 +169,39 @@ const getHistorial = async (req, res) => {
   });
 };
 
+const addFoto = async (req, res) => {
+  const vehiculoId = Number(req.params.id);
+  const vehiculo = await vehiculosModel.findById(vehiculoId);
+
+  if (!vehiculo) {
+    return errorResponse(res, 'Vehiculo no encontrado', undefined, 404);
+  }
+
+  if (!req.file) {
+    return errorResponse(res, 'La foto es requerida', undefined, 400);
+  }
+
+  const foto = await vehiculosModel.addFoto(vehiculoId, {
+    tipo: req.body.tipo || 'Vehículo',
+    url_archivo: `/uploads/vehiculos/${req.file.filename}`,
+    nombre_archivo: req.file.originalname,
+    descripcion: normalizeNullableString(req.body.descripcion),
+    subido_por: req.user.id
+  });
+  const fotos = await vehiculosModel.getFotos(vehiculoId);
+
+  return successResponse(res, 'Foto de vehiculo cargada correctamente', {
+    foto,
+    fotos
+  }, 201);
+};
+
 module.exports = {
   listVehiculos,
   getVehiculo,
   createVehiculo,
   updateVehiculo,
   updateEstado,
-  getHistorial
+  getHistorial,
+  addFoto
 };

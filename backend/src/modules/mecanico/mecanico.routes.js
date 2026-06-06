@@ -5,6 +5,7 @@ const asyncHandler = require('../../utils/asyncHandler');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const roleMiddleware = require('../../middlewares/roleMiddleware');
 const validateRequest = require('../../middlewares/validateRequest');
+const { upload, setUploadFolder } = require('../../middlewares/uploadMiddleware');
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const estadosMecanico = [
   'En prueba',
   'Finalizado'
 ];
+const tiposFoto = ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'];
 
 router.use(authMiddleware);
 router.use(roleMiddleware('Mecanico'));
@@ -62,6 +64,19 @@ router.post(
   ],
   validateRequest,
   asyncHandler(mecanicoController.addProductoUsado)
+);
+
+router.post(
+  '/mis-trabajos/:id/fotos',
+  setUploadFolder('visitas'),
+  upload.single('foto'),
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('tipo').optional().isIn(tiposFoto).withMessage('Tipo de foto invalido'),
+    body('descripcion').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(mecanicoController.addFoto)
 );
 
 module.exports = router;

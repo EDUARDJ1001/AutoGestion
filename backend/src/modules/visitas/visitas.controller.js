@@ -1,6 +1,7 @@
 const visitasModel = require('./visitas.model');
 const inventarioModel = require('../inventario/inventario.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
+const { cleanupUploadedFile } = require('../../middlewares/uploadMiddleware');
 
 const normalizeNullableString = (value) => {
   if (value === undefined) {
@@ -62,11 +63,12 @@ const buildServicioAsignadoPayload = (item) => ({
 });
 
 const enrichVisita = async (visita) => {
-  const [servicios, bitacora] = await Promise.all([
+  const [servicios, bitacora, productos, fotos] = await Promise.all([
     visitasModel.getServicios(visita.id),
-    visitasModel.getBitacora(visita.id)
+    visitasModel.getBitacora(visita.id),
+    inventarioModel.listProductosUsadosByVisita(visita.id),
+    visitasModel.getFotos(visita.id)
   ]);
-  const productos = await inventarioModel.listProductosUsadosByVisita(visita.id);
   const totalServicios = servicios.reduce((total, servicio) => {
     return total + Number(servicio.subtotal || 0);
   }, 0);
@@ -75,6 +77,7 @@ const enrichVisita = async (visita) => {
     visita,
     servicios,
     productos,
+    fotos,
     bitacora,
     totales: {
       servicios: Number(totalServicios.toFixed(2))
@@ -207,6 +210,7 @@ const addServicios = async (req, res) => {
   const visita = await visitasModel.findById(visitaId);
 
   if (!visita) {
+    cleanupUploadedFile(req.file);
     return errorResponse(res, 'Visita no encontrada', undefined, 404);
   }
 
@@ -281,6 +285,33 @@ const addProductoUsado = async (req, res) => {
   }
 };
 
+const addFoto = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const visita = await visitasModel.findById(visitaId);
+
+  if (!visita) {
+    return errorResponse(res, 'Visita no encontrada', undefined, 404);
+  }
+
+  if (!req.file) {
+    return errorResponse(res, 'La foto es requerida', undefined, 400);
+  }
+
+  const foto = await visitasModel.addFoto(visitaId, {
+    tipo: req.body.tipo || 'Visita',
+    url_archivo: `/uploads/visitas/${req.file.filename}`,
+    nombre_archivo: req.file.originalname,
+    descripcion: normalizeNullableString(req.body.descripcion),
+    subido_por: req.user.id
+  });
+  const fotos = await visitasModel.getFotos(visitaId);
+
+  return successResponse(res, 'Foto de visita cargada correctamente', {
+    foto,
+    fotos
+  }, 201);
+};
+
 module.exports = {
   listVisitas,
   listActivas,
@@ -290,5 +321,6 @@ module.exports = {
   updateEstado,
   addServicios,
   getBitacora,
-  addProductoUsado
+  addProductoUsado,
+  addFoto
 };

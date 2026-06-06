@@ -215,6 +215,77 @@ const getHistorial = async (vehiculoId) => {
   return result.rows;
 };
 
+const findFotoById = async (id) => {
+  const result = await query(
+    `
+      SELECT
+        id,
+        vehiculo_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por,
+        fecha_creacion
+      FROM vehiculo_fotos
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [id]
+  );
+
+  return result.rows[0] || null;
+};
+
+const addFoto = async (vehiculoId, foto) => {
+  const result = await query(
+    `
+      INSERT INTO vehiculo_fotos (
+        vehiculo_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por
+      )
+      VALUES ($1, COALESCE($2::tipo_foto, 'Vehículo'::tipo_foto), $3, $4, $5, $6)
+      RETURNING id
+    `,
+    [
+      vehiculoId,
+      foto.tipo || 'Vehículo',
+      foto.url_archivo,
+      foto.nombre_archivo || null,
+      foto.descripcion || null,
+      foto.subido_por || null
+    ]
+  );
+
+  return findFotoById(result.rows[0].id);
+};
+
+const getFotos = async (vehiculoId) => {
+  const result = await query(
+    `
+      SELECT
+        id,
+        vehiculo_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por,
+        fecha_creacion
+      FROM vehiculo_fotos
+      WHERE vehiculo_id = $1
+      ORDER BY fecha_creacion DESC, id DESC
+    `,
+    [vehiculoId]
+  );
+
+  return result.rows;
+};
+
 module.exports = {
   list,
   listByCliente,
@@ -223,5 +294,7 @@ module.exports = {
   create,
   update,
   updateEstado,
-  getHistorial
+  getHistorial,
+  addFoto,
+  getFotos
 };

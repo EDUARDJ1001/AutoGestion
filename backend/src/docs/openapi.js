@@ -275,6 +275,23 @@ const openapi = {
           observaciones: { type: 'string', nullable: true }
         }
       },
+      FotoUpload: {
+        type: 'object',
+        required: ['foto'],
+        properties: {
+          foto: {
+            type: 'string',
+            format: 'binary',
+            description: 'Archivo jpg, jpeg, png o webp. Maximo 5 MB.'
+          },
+          tipo: {
+            type: 'string',
+            enum: ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'],
+            example: 'Daño'
+          },
+          descripcion: { type: 'string', nullable: true }
+        }
+      },
       EstadoGeneralPatch: {
         type: 'object',
         required: ['estado'],
@@ -476,6 +493,23 @@ const openapi = {
         responses: { 200: success(), 404: error() }
       }
     },
+    '/vehiculos/{id}/fotos': {
+      post: {
+        tags: ['Vehiculos'],
+        summary: 'Carga una foto asociada a un vehiculo',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de vehiculo')],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: { $ref: '#/components/schemas/FotoUpload' }
+            }
+          }
+        },
+        responses: { 201: success(), 400: error(), 404: error() }
+      }
+    },
     '/categorias-servicio': {
       get: {
         tags: ['Servicios'],
@@ -613,6 +647,23 @@ const openapi = {
         parameters: [idParam('id', 'ID de visita')],
         requestBody: jsonBody({ $ref: '#/components/schemas/ProductoUsado' }),
         responses: { 201: success(), 400: error('Stock insuficiente') }
+      }
+    },
+    '/visitas/{id}/fotos': {
+      post: {
+        tags: ['Visitas'],
+        summary: 'Carga una foto asociada a una visita',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita')],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: { $ref: '#/components/schemas/FotoUpload' }
+            }
+          }
+        },
+        responses: { 201: success(), 400: error(), 404: error() }
       }
     },
     '/visitas/{id}/bitacora': {
@@ -779,6 +830,23 @@ const openapi = {
         parameters: [idParam('id', 'ID de visita/trabajo')],
         requestBody: jsonBody({ $ref: '#/components/schemas/ProductoUsado' }),
         responses: { 201: success(), 400: error('Stock insuficiente'), 404: error('No asignado o no encontrado') }
+      }
+    },
+    '/mecanico/mis-trabajos/{id}/fotos': {
+      post: {
+        tags: ['Mecanico'],
+        summary: 'Carga una foto de avance en un trabajo asignado',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita/trabajo')],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: { $ref: '#/components/schemas/FotoUpload' }
+            }
+          }
+        },
+        responses: { 201: success(), 400: error(), 404: error('No asignado o no encontrado') }
       }
     }
   }

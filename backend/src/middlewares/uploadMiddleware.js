@@ -49,7 +49,14 @@ const setUploadFolder = (folder) => (req, res, next) => {
   next();
 };
 
+const cleanupUploadedFile = (file) => {
+  if (file?.path && fs.existsSync(file.path)) {
+    fs.unlinkSync(file.path);
+  }
+};
+
 module.exports = {
   upload,
-  setUploadFolder
+  setUploadFolder,
+  cleanupUploadedFile
 };

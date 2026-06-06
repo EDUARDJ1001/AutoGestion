@@ -389,6 +389,77 @@ const getBitacora = async (visitaId) => {
   return result.rows;
 };
 
+const findFotoById = async (id) => {
+  const result = await query(
+    `
+      SELECT
+        id,
+        visita_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por,
+        fecha_creacion
+      FROM visita_fotos
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [id]
+  );
+
+  return result.rows[0] || null;
+};
+
+const addFoto = async (visitaId, foto) => {
+  const result = await query(
+    `
+      INSERT INTO visita_fotos (
+        visita_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por
+      )
+      VALUES ($1, COALESCE($2::tipo_foto, 'Visita'::tipo_foto), $3, $4, $5, $6)
+      RETURNING id
+    `,
+    [
+      visitaId,
+      foto.tipo || 'Visita',
+      foto.url_archivo,
+      foto.nombre_archivo || null,
+      foto.descripcion || null,
+      foto.subido_por || null
+    ]
+  );
+
+  return findFotoById(result.rows[0].id);
+};
+
+const getFotos = async (visitaId) => {
+  const result = await query(
+    `
+      SELECT
+        id,
+        visita_id,
+        tipo,
+        url_archivo,
+        nombre_archivo,
+        descripcion,
+        subido_por,
+        fecha_creacion
+      FROM visita_fotos
+      WHERE visita_id = $1
+      ORDER BY fecha_creacion DESC, id DESC
+    `,
+    [visitaId]
+  );
+
+  return result.rows;
+};
+
 module.exports = {
   list,
   listActivas,
@@ -401,5 +472,7 @@ module.exports = {
   updateEstado,
   addServicios,
   getServicios,
-  getBitacora
+  getBitacora,
+  addFoto,
+  getFotos
 };

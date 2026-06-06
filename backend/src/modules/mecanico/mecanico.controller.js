@@ -2,6 +2,7 @@ const mecanicoModel = require('./mecanico.model');
 const visitasModel = require('../visitas/visitas.model');
 const inventarioModel = require('../inventario/inventario.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
+const { cleanupUploadedFile } = require('../../middlewares/uploadMiddleware');
 
 const normalizeNullableString = (value) => {
   if (value === undefined || value === null) {
@@ -13,9 +14,10 @@ const normalizeNullableString = (value) => {
 };
 
 const enrichTrabajo = async (trabajo) => {
-  const [servicios, productos, bitacora] = await Promise.all([
+  const [servicios, productos, fotos, bitacora] = await Promise.all([
     visitasModel.getServicios(trabajo.id),
     inventarioModel.listProductosUsadosByVisita(trabajo.id),
+    visitasModel.getFotos(trabajo.id),
     visitasModel.getBitacora(trabajo.id)
   ]);
 
@@ -23,6 +25,7 @@ const enrichTrabajo = async (trabajo) => {
     visita: trabajo,
     servicios,
     productos,
+    fotos,
     bitacora
   };
 };
@@ -102,9 +105,38 @@ const addProductoUsado = async (req, res) => {
   }
 };
 
+const addFoto = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const trabajo = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
+
+  if (!trabajo) {
+    cleanupUploadedFile(req.file);
+    return errorResponse(res, 'Trabajo no encontrado o no asignado a este mecanico', undefined, 404);
+  }
+
+  if (!req.file) {
+    return errorResponse(res, 'La foto es requerida', undefined, 400);
+  }
+
+  const foto = await visitasModel.addFoto(visitaId, {
+    tipo: req.body.tipo || 'Avance',
+    url_archivo: `/uploads/visitas/${req.file.filename}`,
+    nombre_archivo: req.file.originalname,
+    descripcion: normalizeNullableString(req.body.descripcion),
+    subido_por: req.user.id
+  });
+  const fotos = await visitasModel.getFotos(visitaId);
+
+  return successResponse(res, 'Foto de avance cargada correctamente', {
+    foto,
+    fotos
+  }, 201);
+};
+
 module.exports = {
   listMisTrabajos,
   getMiTrabajo,
   updateEstado,
-  addProductoUsado
+  addProductoUsado,
+  addFoto
 };
