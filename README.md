@@ -67,3 +67,15 @@ Por defecto consume la API en:
 ```text
 VITE_API_URL=http://localhost:4000/api
 ```
+
+Estructura principal del frontend:
+
+```text
+frontend/src/api         Cliente HTTP
+frontend/src/components  Componentes reutilizables
+frontend/src/config      Contratos de modulos y formularios
+frontend/src/hooks       Carga de datos y catalogos
+frontend/src/pages       Pantallas principales
+frontend/src/routes      Definicion de modulos/rutas internas
+frontend/src/utils       Helpers de sesion y formato
+```
