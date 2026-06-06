@@ -205,6 +205,8 @@ function App() {
           onCreate={openCreate}
           onEdit={openEdit}
           onToggleStatus={toggleStatus}
+          onRefresh={refresh}
+          showToast={showToast}
         />
       </main>
 

@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
+export const API_ORIGIN = new URL(API_URL).origin;
 
 const parseResponse = async (response) => {
   const contentType = response.headers.get('content-type') || '';
@@ -18,19 +20,20 @@ const parseResponse = async (response) => {
 
 export const apiRequest = async (path, { token, method = 'GET', body } = {}) => {
   const headers = {};
+  const isFormData = body instanceof FormData;
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  if (body !== undefined) {
+  if (body !== undefined && !isFormData) {
     headers['Content-Type'] = 'application/json';
   }
 
   const response = await fetch(`${API_URL}${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined
+    body: body !== undefined && !isFormData ? JSON.stringify(body) : body
   });
 
   return parseResponse(response);
@@ -61,3 +64,9 @@ export const crudRequest = ({ path, token, method, body }) => apiRequest(path, {
   method,
   body
 });
+
+export const assetUrl = (path) => {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_ORIGIN}${path}`;
+};
