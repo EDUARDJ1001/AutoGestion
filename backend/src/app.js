@@ -17,6 +17,7 @@ const inventarioRoutes = require('./modules/inventario/inventario.routes');
 const productosRoutes = require('./modules/inventario/productos.routes');
 const categoriasProductoRoutes = require('./modules/inventario/categoriasProducto.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+const setupSwagger = require('./docs/swagger');
 
 const app = express();
 
@@ -42,6 +43,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok'
   });
 });
+
+setupSwagger(app);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);

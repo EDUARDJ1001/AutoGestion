@@ -27,6 +27,13 @@ La API expone una ruta de salud:
 GET http://localhost:4000/api/health
 ```
 
+Documentacion Swagger:
+
+```text
+GET http://localhost:4000/api/docs
+GET http://localhost:4000/api/docs.json
+```
+
 ## Migraciones
 
 Las migraciones SQL estan en `backend/db/migrations`.
