@@ -58,6 +58,19 @@ const tipoMovimientoInventario = {
   ]
 };
 
+const estadoMecanico = {
+  type: 'string',
+  enum: [
+    'Recibido',
+    'En diagnóstico',
+    'Pendiente de aprobación',
+    'En proceso',
+    'En espera de repuesto',
+    'En prueba',
+    'Finalizado'
+  ]
+};
+
 const jsonBody = (schema) => ({
   required: true,
   content: {
@@ -111,7 +124,8 @@ const openapi = {
     { name: 'Servicios' },
     { name: 'Visitas' },
     { name: 'Inventario' },
-    { name: 'Dashboard' }
+    { name: 'Dashboard' },
+    { name: 'Mecanico' }
   ],
   components: {
     securitySchemes: {
@@ -274,6 +288,15 @@ const openapi = {
         properties: {
           estado: estadoVisita,
           observaciones: { type: 'string', nullable: true }
+        }
+      },
+      EstadoMecanicoPatch: {
+        type: 'object',
+        required: ['estado'],
+        properties: {
+          estado: estadoMecanico,
+          observaciones: { type: 'string', nullable: true },
+          diagnostico: { type: 'string', nullable: true }
         }
       }
     }
@@ -713,6 +736,49 @@ const openapi = {
         summary: 'Lista productos con stock bajo desde vista_stock_bajo',
         security: authRequired,
         responses: { 200: success() }
+      }
+    },
+    '/mecanico/mis-trabajos': {
+      get: {
+        tags: ['Mecanico'],
+        summary: 'Lista trabajos asignados al mecanico autenticado',
+        description: 'Filtra por visitas asignadas directamente al mecanico o por servicios de visita asignados al mecanico.',
+        security: authRequired,
+        parameters: [
+          { name: 'estado', in: 'query', schema: estadoMecanico },
+          { name: 'activas', in: 'query', schema: { type: 'boolean', default: true } }
+        ],
+        responses: { 200: success(), 403: error('Solo rol Mecanico') }
+      }
+    },
+    '/mecanico/mis-trabajos/{id}': {
+      get: {
+        tags: ['Mecanico'],
+        summary: 'Obtiene detalle de un trabajo asignado al mecanico',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita/trabajo')],
+        responses: { 200: success(), 404: error('No asignado o no encontrado') }
+      }
+    },
+    '/mecanico/mis-trabajos/{id}/estado': {
+      patch: {
+        tags: ['Mecanico'],
+        summary: 'Actualiza estado, diagnostico u observaciones del trabajo asignado',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita/trabajo')],
+        requestBody: jsonBody({ $ref: '#/components/schemas/EstadoMecanicoPatch' }),
+        responses: { 200: success(), 400: error(), 404: error('No asignado o no encontrado') }
+      }
+    },
+    '/mecanico/mis-trabajos/{id}/productos': {
+      post: {
+        tags: ['Mecanico'],
+        summary: 'Registra producto usado en un trabajo asignado',
+        description: 'Inserta en visita_productos y deja que el trigger descuente inventario.',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita/trabajo')],
+        requestBody: jsonBody({ $ref: '#/components/schemas/ProductoUsado' }),
+        responses: { 201: success(), 400: error('Stock insuficiente'), 404: error('No asignado o no encontrado') }
       }
     }
   }
