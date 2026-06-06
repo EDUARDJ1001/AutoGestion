@@ -1,4 +1,5 @@
 const visitasModel = require('./visitas.model');
+const inventarioModel = require('../inventario/inventario.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
 
 const normalizeNullableString = (value) => {
@@ -65,6 +66,7 @@ const enrichVisita = async (visita) => {
     visitasModel.getServicios(visita.id),
     visitasModel.getBitacora(visita.id)
   ]);
+  const productos = await inventarioModel.listProductosUsadosByVisita(visita.id);
   const totalServicios = servicios.reduce((total, servicio) => {
     return total + Number(servicio.subtotal || 0);
   }, 0);
@@ -72,6 +74,7 @@ const enrichVisita = async (visita) => {
   return {
     visita,
     servicios,
+    productos,
     bitacora,
     totales: {
       servicios: Number(totalServicios.toFixed(2))
@@ -238,6 +241,46 @@ const getBitacora = async (req, res) => {
   });
 };
 
+const addProductoUsado = async (req, res) => {
+  try {
+    const visitaId = Number(req.params.id);
+    const visita = await visitasModel.findById(visitaId);
+
+    if (!visita) {
+      return errorResponse(res, 'Visita no encontrada', undefined, 404);
+    }
+
+    const productoId = Number(req.body.producto_id);
+    const productoActivo = await inventarioModel.productoActivo(productoId);
+
+    if (!productoActivo) {
+      return errorResponse(res, 'El producto indicado no existe o esta inactivo', undefined, 400);
+    }
+
+    const productoUsado = await inventarioModel.registrarProductoUsado({
+      visitaId,
+      productoId,
+      usuarioId: req.user.id,
+      cantidad: Number(req.body.cantidad),
+      observaciones: normalizeNullableString(req.body.observaciones)
+    });
+    const productos = await inventarioModel.listProductosUsadosByVisita(visitaId);
+    const producto = await inventarioModel.findProductoById(productoId);
+
+    return successResponse(res, 'Producto usado registrado correctamente', {
+      producto_usado: productoUsado,
+      productos,
+      producto
+    }, 201);
+  } catch (error) {
+    if (error.message?.includes('Stock insuficiente')) {
+      return errorResponse(res, error.message, undefined, 400);
+    }
+
+    throw error;
+  }
+};
+
 module.exports = {
   listVisitas,
   listActivas,
@@ -246,5 +289,6 @@ module.exports = {
   updateVisita,
   updateEstado,
   addServicios,
-  getBitacora
+  getBitacora,
+  addProductoUsado
 };

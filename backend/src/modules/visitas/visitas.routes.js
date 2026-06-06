@@ -139,4 +139,16 @@ router.post(
   asyncHandler(visitasController.addServicios)
 );
 
+router.post(
+  '/:id/productos',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('producto_id').isInt({ min: 1 }).withMessage('producto_id es requerido'),
+    body('cantidad').isFloat({ gt: 0 }).withMessage('cantidad debe ser mayor que 0'),
+    body('observaciones').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(visitasController.addProductoUsado)
+);
+
 module.exports = router;
