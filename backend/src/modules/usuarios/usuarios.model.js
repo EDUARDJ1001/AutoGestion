@@ -32,7 +32,7 @@ const list = async ({ search, estado, rolId } = {}) => {
 
   if (estado) {
     params.push(estado);
-    filters.push(`u.estado = $${params.length}`);
+    filters.push(`u.estado = $${params.length}::estado_general`);
   }
 
   if (rolId) {
@@ -73,7 +73,7 @@ const findById = async (id) => {
 
 const roleExists = async (rolId) => {
   const result = await query(
-    'SELECT id FROM roles WHERE id = $1 AND estado = $2 LIMIT 1',
+    'SELECT id FROM roles WHERE id = $1 AND estado = $2::estado_general LIMIT 1',
     [rolId, 'Activo']
   );
 
@@ -93,7 +93,7 @@ const create = async (user) => {
         telefono,
         estado
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, 'Activo'))
+      VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::estado_general, 'Activo'::estado_general))
       RETURNING id
     `,
     [
@@ -128,7 +128,7 @@ const update = async (id, fields) => {
   allowedFields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(fields, field)) {
       params.push(fields[field]);
-      sets.push(`${field} = $${params.length}`);
+      sets.push(field === 'estado' ? `${field} = $${params.length}::estado_general` : `${field} = $${params.length}`);
     }
   });
 
@@ -159,7 +159,7 @@ const updateEstado = async (id, estado) => {
   const result = await query(
     `
       UPDATE usuarios
-      SET estado = $1
+      SET estado = $1::estado_general
       WHERE id = $2
       RETURNING id
     `,
