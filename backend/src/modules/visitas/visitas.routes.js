@@ -1,5 +1,142 @@
 const { Router } = require('express');
+const { body, param, query } = require('express-validator');
+const visitasController = require('./visitas.controller');
+const asyncHandler = require('../../utils/asyncHandler');
+const authMiddleware = require('../../middlewares/authMiddleware');
+const roleMiddleware = require('../../middlewares/roleMiddleware');
+const validateRequest = require('../../middlewares/validateRequest');
 
 const router = Router();
+
+const estadosVisita = [
+  'Recibido',
+  'En diagnóstico',
+  'Pendiente de aprobación',
+  'En proceso',
+  'En espera de repuesto',
+  'En prueba',
+  'Finalizado',
+  'Entregado',
+  'Cancelado'
+];
+
+const visitaCreateValidators = [
+  body('cliente_id').isInt({ min: 1 }).withMessage('cliente_id es requerido'),
+  body('vehiculo_id').isInt({ min: 1 }).withMessage('vehiculo_id es requerido'),
+  body('mecanico_asignado_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_asignado_id debe ser entero'),
+  body('fecha_entrega_estimada').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_estimada invalida'),
+  body('kilometraje_ingreso').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0 }).withMessage('Kilometraje invalido'),
+  body('motivo_visita').trim().notEmpty().withMessage('motivo_visita es requerido'),
+  body('descripcion_problema').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('diagnostico').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('estado').optional().isIn(estadosVisita).withMessage('Estado invalido'),
+  body('observaciones').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('servicios').optional().isArray().withMessage('servicios debe ser un arreglo'),
+  body('servicios').optional().custom((servicios) => servicios.every((servicio) => servicio.servicio_id)).withMessage('Cada servicio asignado requiere servicio_id'),
+  body('servicios.*.servicio_id').optional().isInt({ min: 1 }).withMessage('servicio_id es requerido'),
+  body('servicios.*.mecanico_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_id debe ser entero'),
+  body('servicios.*.precio_acordado').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }).withMessage('precio_acordado debe ser mayor o igual a 0'),
+  body('servicios.*.cantidad').optional({ nullable: true, checkFalsy: true }).isFloat({ gt: 0 }).withMessage('cantidad debe ser mayor que 0'),
+  body('servicios.*.estado').optional().isIn(estadosVisita).withMessage('Estado de servicio invalido')
+];
+
+const visitaUpdateValidators = [
+  param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+  body('mecanico_asignado_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_asignado_id debe ser entero'),
+  body('fecha_entrega_estimada').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_estimada invalida'),
+  body('fecha_entrega_real').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_real invalida'),
+  body('kilometraje_ingreso').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0 }).withMessage('Kilometraje invalido'),
+  body('motivo_visita').optional().trim().notEmpty().withMessage('motivo_visita no puede ir vacio'),
+  body('descripcion_problema').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('diagnostico').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('estado').optional().isIn(estadosVisita).withMessage('Estado invalido'),
+  body('observaciones').optional({ nullable: true, checkFalsy: true }).trim()
+];
+
+router.use(authMiddleware);
+router.use(roleMiddleware('Admin', 'Cajero'));
+
+router.get(
+  '/',
+  [
+    query('estado').optional().isIn(estadosVisita).withMessage('Estado invalido'),
+    query('cliente_id').optional().isInt({ min: 1 }).withMessage('cliente_id debe ser entero'),
+    query('vehiculo_id').optional().isInt({ min: 1 }).withMessage('vehiculo_id debe ser entero'),
+    query('mecanico_id').optional().isInt({ min: 1 }).withMessage('mecanico_id debe ser entero')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.listVisitas)
+);
+
+router.get(
+  '/activas',
+  asyncHandler(visitasController.listActivas)
+);
+
+router.get(
+  '/:id/bitacora',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.getBitacora)
+);
+
+router.get(
+  '/:id',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.getVisita)
+);
+
+router.post(
+  '/',
+  visitaCreateValidators,
+  validateRequest,
+  asyncHandler(visitasController.createVisita)
+);
+
+router.put(
+  '/:id',
+  visitaUpdateValidators,
+  validateRequest,
+  asyncHandler(visitasController.updateVisita)
+);
+
+router.patch(
+  '/:id/estado',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('estado').isIn(estadosVisita).withMessage('Estado invalido'),
+    body('observaciones').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(visitasController.updateEstado)
+);
+
+router.post(
+  '/:id/servicios',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('servicios').optional().isArray({ min: 1 }).withMessage('servicios debe ser un arreglo con al menos un elemento'),
+    body('servicios').optional().custom((servicios) => servicios.every((servicio) => servicio.servicio_id)).withMessage('Cada servicio asignado requiere servicio_id'),
+    body('servicio_id').if(body('servicios').not().exists()).isInt({ min: 1 }).withMessage('servicio_id es requerido'),
+    body('mecanico_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_id debe ser entero'),
+    body('descripcion_adicional').optional({ nullable: true, checkFalsy: true }).trim(),
+    body('precio_acordado').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }).withMessage('precio_acordado debe ser mayor o igual a 0'),
+    body('cantidad').optional({ nullable: true, checkFalsy: true }).isFloat({ gt: 0 }).withMessage('cantidad debe ser mayor que 0'),
+    body('estado').optional().isIn(estadosVisita).withMessage('Estado de servicio invalido'),
+    body('observaciones').optional({ nullable: true, checkFalsy: true }).trim(),
+    body('servicios.*.servicio_id').optional().isInt({ min: 1 }).withMessage('servicio_id es requerido'),
+    body('servicios.*.mecanico_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_id debe ser entero'),
+    body('servicios.*.precio_acordado').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }).withMessage('precio_acordado debe ser mayor o igual a 0'),
+    body('servicios.*.cantidad').optional({ nullable: true, checkFalsy: true }).isFloat({ gt: 0 }).withMessage('cantidad debe ser mayor que 0'),
+    body('servicios.*.estado').optional().isIn(estadosVisita).withMessage('Estado de servicio invalido')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.addServicios)
+);
 
 module.exports = router;

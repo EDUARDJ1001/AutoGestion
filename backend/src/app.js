@@ -12,6 +12,7 @@ const vehiculosRoutes = require('./modules/vehiculos/vehiculos.routes');
 const visitasRoutes = require('./modules/visitas/visitas.routes');
 const mecanicoRoutes = require('./modules/mecanico/mecanico.routes');
 const serviciosRoutes = require('./modules/servicios/servicios.routes');
+const categoriasServicioRoutes = require('./modules/servicios/categoriasServicio.routes');
 const inventarioRoutes = require('./modules/inventario/inventario.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 
@@ -47,6 +48,7 @@ app.use('/api/vehiculos', vehiculosRoutes);
 app.use('/api/visitas', visitasRoutes);
 app.use('/api/mecanico', mecanicoRoutes);
 app.use('/api/servicios', serviciosRoutes);
+app.use('/api/categorias-servicio', categoriasServicioRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 

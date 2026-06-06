@@ -26,3 +26,13 @@ La API expone una ruta de salud:
 ```text
 GET http://localhost:4000/api/health
 ```
+
+## Migraciones
+
+Las migraciones SQL estan en `backend/db/migrations`.
+
+Para esta etapa se agrego una migracion minima para que los servicios asignados a una visita puedan guardar precio negociado por caso:
+
+```text
+backend/db/migrations/001_visita_servicios_precios_dinamicos.sql
+```
