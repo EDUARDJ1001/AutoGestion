@@ -65,8 +65,46 @@ npm run dev
 Por defecto consume la API en:
 
 ```text
-VITE_API_URL=http://localhost:4000/api
+VITE_API_URL=http://IP_DEL_EQUIPO:4000/api
 ```
+
+Para probar desde moviles o tablets en la misma red:
+
+```powershell
+ipconfig
+```
+
+Busca la IPv4 del equipo, por ejemplo `192.168.1.50`, y configura:
+
+```text
+backend/.env
+HOST=0.0.0.0
+PORT=4000
+CORS_ORIGIN=*
+
+frontend/.env
+VITE_API_URL=http://192.168.1.50:4000/api
+```
+
+Luego inicia ambos servicios:
+
+```powershell
+cd backend
+npm run dev
+```
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Desde el movil abre:
+
+```text
+http://192.168.1.50:5173
+```
+
+Si no carga desde otro equipo, revisa que Windows Firewall permita los puertos `4000` y `5173` en la red privada.
 
 Estructura principal del frontend:
 

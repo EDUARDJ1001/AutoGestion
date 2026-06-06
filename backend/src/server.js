@@ -4,9 +4,11 @@ const app = require('./app');
 const { pool } = require('./config/db');
 
 const port = Number(process.env.PORT || 4000);
+const host = process.env.HOST || '0.0.0.0';
 
-const server = app.listen(port, () => {
-  console.log(`API escuchando en http://localhost:${port}`);
+const server = app.listen(port, host, () => {
+  console.log(`API escuchando en http://${host}:${port}`);
+  console.log(`En red local usa http://IP_DEL_EQUIPO:${port}`);
 });
 
 const shutdown = async (signal) => {
