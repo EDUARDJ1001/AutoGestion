@@ -50,3 +50,20 @@ Puedes aplicar las migraciones con:
 cd backend
 npm run migrate
 ```
+
+## Frontend
+
+La base del frontend esta en `frontend` y usa Vite + React.
+
+```powershell
+cd frontend
+npm install
+Copy-Item .env.example .env
+npm run dev
+```
+
+Por defecto consume la API en:
+
+```text
+VITE_API_URL=http://localhost:4000/api
+```
