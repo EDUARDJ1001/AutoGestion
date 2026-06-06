@@ -33,7 +33,7 @@ function DashboardPage({ data, loading }) {
         <DataTable
           rows={data?.visitas_recientes || []}
           columns={[
-            ['cliente_nombre', 'Cliente'],
+            ['cliente', 'Cliente', (value, row) => value || row.cliente_nombre || 'Sin dato'],
             ['vehiculo', 'Vehiculo', (_, row) => vehicleLabel(row)],
             ['estado', 'Estado'],
             ['fecha_ingreso', 'Ingreso', formatDate]
