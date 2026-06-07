@@ -4,6 +4,7 @@ import { moduleTitles } from '../routes/modules';
 import { filterRows } from '../utils/formatters';
 import DataTable from '../components/ui/DataTable';
 import EmptyState from '../components/ui/EmptyState';
+import ErrorState from '../components/ui/ErrorState';
 
 function ModulePage({
   moduleKey,
@@ -15,7 +16,8 @@ function ModulePage({
   onSearch,
   onCreate,
   onEdit,
-  onToggleStatus
+  onToggleStatus,
+  onRefresh
 }) {
   const config = moduleConfig[moduleKey];
   const rows = filterRows(getListForModule(moduleKey, data), search);
@@ -44,7 +46,7 @@ function ModulePage({
       </div>
 
       {loading ? <EmptyState text="Cargando datos..." /> : null}
-      {error ? <EmptyState text={error} tone="danger" /> : null}
+      {error ? <ErrorState text={error} onRetry={onRefresh} /> : null}
       {!loading && !error ? (
         <DataTable
           rows={rows}

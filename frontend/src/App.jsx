@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu, RefreshCcw } from 'lucide-react';
-import { crudRequest } from './api/client';
+import { crudRequest, isAuthError } from './api/client';
 import LoginScreen from './components/auth/LoginScreen';
+import ConfirmModal from './components/forms/ConfirmModal';
 import CrudModal from './components/forms/CrudModal';
 import StatusModal from './components/forms/StatusModal';
 import Sidebar from './components/layout/Sidebar';
@@ -25,20 +26,45 @@ function App() {
   const [reloadKey, setReloadKey] = useState(0);
   const [modal, setModal] = useState(null);
   const [statusModal, setStatusModal] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const [authNotice, setAuthNotice] = useState('');
 
   const visibleModules = useMemo(() => {
     const role = session?.user?.rol;
     return modules.filter((module) => module.roles.includes(role));
   }, [session]);
 
-  const { catalogs, catalogLoading } = useCatalogs(session, reloadKey);
+  const logout = useCallback(() => {
+    clearSession();
+    setSession(null);
+  }, []);
+
+  const handleSessionExpired = useCallback(() => {
+    clearSession();
+    setSession(null);
+    setModal(null);
+    setStatusModal(null);
+    setConfirmModal(null);
+    setAuthNotice('Tu sesion expiro. Ingresa nuevamente para continuar.');
+  }, []);
+
+  const handleRequestError = useCallback((error) => {
+    if (isAuthError(error)) {
+      handleSessionExpired();
+      return 'Sesion expirada. Ingresa nuevamente.';
+    }
+
+    return error?.message || 'No se pudo completar la accion.';
+  }, [handleSessionExpired]);
+
+  const { catalogs, catalogLoading } = useCatalogs(session, reloadKey, handleSessionExpired);
   const {
     moduleData,
     setModuleData,
     loading,
     error
-  } = useModuleData(activeModule, session, reloadKey);
+  } = useModuleData(activeModule, session, reloadKey, handleSessionExpired);
 
   useEffect(() => {
     if (!session) return;
@@ -53,7 +79,15 @@ function App() {
   }, [activeModule, session, visibleModules]);
 
   if (!session) {
-    return <LoginScreen onLogin={setSession} />;
+    return (
+      <LoginScreen
+        notice={authNotice}
+        onLogin={(nextSession) => {
+          setAuthNotice('');
+          setSession(nextSession);
+        }}
+      />
+    );
   }
 
   const refresh = () => {
@@ -68,11 +102,6 @@ function App() {
   const showToast = (text, tone = 'success') => {
     setToast({ text, tone });
     window.setTimeout(() => setToast(null), 2800);
-  };
-
-  const logout = () => {
-    clearSession();
-    setSession(null);
   };
 
   const openCreate = (moduleKey) => {
@@ -100,9 +129,30 @@ function App() {
       showToast('Registro guardado correctamente');
       refresh();
     } catch (err) {
-      setFormError(err.message);
+      setFormError(handleRequestError(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const executeStatusToggle = async (moduleKey, row, nextEstado) => {
+    const config = moduleConfig[moduleKey];
+
+    setSaving(true);
+    try {
+      await crudRequest({
+        path: `${config.path}/${row.id}/estado`,
+        token: session.token,
+        method: 'PATCH',
+        body: { estado: normalizeVisitStatus(nextEstado) }
+      });
+      showToast('Estado actualizado');
+      refresh();
+    } catch (err) {
+      showToast(handleRequestError(err), 'danger');
+    } finally {
+      setSaving(false);
+      setConfirmModal(null);
     }
   };
 
@@ -116,22 +166,11 @@ function App() {
     }
 
     const nextEstado = row.estado === 'Activo' ? 'Inactivo' : 'Activo';
-
-    setSaving(true);
-    try {
-      await crudRequest({
-        path: `${config.path}/${row.id}/estado`,
-        token: session.token,
-        method: 'PATCH',
-        body: { estado: normalizeVisitStatus(nextEstado) }
-      });
-      showToast('Estado actualizado');
-      refresh();
-    } catch (err) {
-      showToast(err.message, 'danger');
-    } finally {
-      setSaving(false);
-    }
+    setConfirmModal({
+      title: 'Confirmar cambio',
+      message: `Se cambiara el estado de este registro a ${nextEstado}.`,
+      action: () => executeStatusToggle(moduleKey, row, nextEstado)
+    });
   };
 
   const submitStatus = async (event) => {
@@ -154,7 +193,7 @@ function App() {
       showToast('Estado actualizado');
       refresh();
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(handleRequestError(err), 'danger');
     } finally {
       setSaving(false);
     }
@@ -207,6 +246,7 @@ function App() {
           onToggleStatus={toggleStatus}
           onRefresh={refresh}
           showToast={showToast}
+          onRequestError={handleRequestError}
         />
       </main>
 
@@ -229,6 +269,12 @@ function App() {
           onSubmit={submitStatus}
         />
       ) : null}
+      <ConfirmModal
+        confirm={confirmModal}
+        saving={saving}
+        onCancel={() => setConfirmModal(null)}
+        onConfirm={() => confirmModal?.action?.()}
+      />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

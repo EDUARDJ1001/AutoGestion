@@ -1,9 +1,10 @@
 import { AlertTriangle, Boxes, Car, Settings } from 'lucide-react';
 import DataTable from '../components/ui/DataTable';
 import EmptyState from '../components/ui/EmptyState';
+import ErrorState from '../components/ui/ErrorState';
 import { formatDate, vehicleLabel } from '../utils/formatters';
 
-function DashboardPage({ data, loading }) {
+function DashboardPage({ data, loading, error, onRefresh }) {
   const cards = data?.tarjetas || {};
   const cardItems = [
     ['Vehiculos activos', cards.vehiculos_activos_taller ?? 0, Car],
@@ -13,6 +14,7 @@ function DashboardPage({ data, loading }) {
   ];
 
   if (loading) return <EmptyState text="Cargando dashboard..." />;
+  if (error) return <ErrorState text={error} onRetry={onRefresh} />;
 
   return (
     <div className="dashboard-grid">

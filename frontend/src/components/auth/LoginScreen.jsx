@@ -3,7 +3,7 @@ import { Gauge, LogIn } from 'lucide-react';
 import { login } from '../../api/client';
 import { saveSession } from '../../utils/session';
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ notice, onLogin }) {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,6 +35,7 @@ function LoginScreen({ onLogin }) {
         <p>Acceso operativo del taller</p>
 
         <form className="login-form" onSubmit={submit}>
+          {notice ? <div className="form-notice">{notice}</div> : null}
           <label>
             Usuario
             <input

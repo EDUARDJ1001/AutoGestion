@@ -4,7 +4,7 @@ import ModulePage from '../pages/ModulePage';
 
 function AppRoutes({ activeModule, ...props }) {
   if (activeModule === 'dashboard') {
-    return <DashboardPage data={props.data} loading={props.loading} />;
+    return <DashboardPage data={props.data} loading={props.loading} error={props.error} onRefresh={props.onRefresh} />;
   }
 
   if (activeModule === 'mecanico') {

@@ -13,7 +13,9 @@ import {
 import { apiRequest, assetUrl, crudRequest } from '../api/client';
 import { estadosVisita } from '../constants/app';
 import { formatDate, vehicleLabel } from '../utils/formatters';
+import ConfirmModal from '../components/forms/ConfirmModal';
 import EmptyState from '../components/ui/EmptyState';
+import ErrorState from '../components/ui/ErrorState';
 
 const estadosMecanico = estadosVisita.filter((estado) => !['Entregado', 'Cancelado'].includes(estado));
 const tiposFoto = ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'];
@@ -29,7 +31,7 @@ const initialProductForm = {
   observaciones: ''
 };
 
-function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
+function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onRequestError }) {
   const trabajos = data?.trabajos || [];
   const [selectedId, setSelectedId] = useState(undefined);
   const [detail, setDetail] = useState(null);
@@ -42,6 +44,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
   const [productForm, setProductForm] = useState(initialProductForm);
   const [photoForm, setPhotoForm] = useState({ tipo: 'Avance', descripcion: '', foto: null });
   const [savingAction, setSavingAction] = useState('');
+  const [confirmModal, setConfirmModal] = useState(null);
 
   const filteredTrabajos = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -73,14 +76,17 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       .then((payload) => {
         if (!ignore) setProductos(payload.productos || []);
       })
-      .catch(() => {
-        if (!ignore) setProductos([]);
+      .catch((err) => {
+        if (!ignore) {
+          onRequestError?.(err);
+          setProductos([]);
+        }
       });
 
     return () => {
       ignore = true;
     };
-  }, [session.token]);
+  }, [onRequestError, session.token]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -99,7 +105,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
         });
       })
       .catch((err) => {
-        if (!ignore) setDetailError(err.message);
+        if (!ignore) setDetailError(onRequestError?.(err) || err.message);
       })
       .finally(() => {
         if (!ignore) setDetailLoading(false);
@@ -108,7 +114,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
     return () => {
       ignore = true;
     };
-  }, [selectedId, session.token]);
+  }, [onRequestError, selectedId, session.token]);
 
   const refreshDetail = async () => {
     if (!selectedId) return;
@@ -126,8 +132,17 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
     setDetailError('');
   };
 
-  const updateEstado = async (estado) => {
+  const updateEstado = async (estado, { skipConfirm = false } = {}) => {
     if (!detail?.visita) return;
+
+    if (!skipConfirm && estado === 'Finalizado') {
+      setConfirmModal({
+        title: 'Confirmar estado',
+        message: 'Se marcara este trabajo como finalizado. Confirma que el avance ya fue revisado.',
+        action: () => updateEstado(estado, { skipConfirm: true })
+      });
+      return;
+    }
 
     setSavingAction(`estado:${estado}`);
     try {
@@ -145,9 +160,10 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       showToast('Estado actualizado');
       onRefresh();
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(onRequestError?.(err) || err.message, 'danger');
     } finally {
       setSavingAction('');
+      setConfirmModal(null);
     }
   };
 
@@ -171,7 +187,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       showToast('Diagnostico guardado');
       onRefresh();
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(onRequestError?.(err) || err.message, 'danger');
     } finally {
       setSavingAction('');
     }
@@ -197,7 +213,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       setProductForm(initialProductForm);
       showToast('Producto registrado');
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(onRequestError?.(err) || err.message, 'danger');
     } finally {
       setSavingAction('');
     }
@@ -226,14 +242,23 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       showToast('Foto cargada');
       await refreshDetail();
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(onRequestError?.(err) || err.message, 'danger');
     } finally {
       setSavingAction('');
     }
   };
 
-  const updateEtapa = async (etapa, estado) => {
+  const updateEtapa = async (etapa, estado, { skipConfirm = false } = {}) => {
     if (!detail?.visita) return;
+
+    if (!skipConfirm && ['Completado', 'Omitido'].includes(estado)) {
+      setConfirmModal({
+        title: 'Confirmar etapa',
+        message: `Se marcara la etapa "${etapa.nombre_etapa}" como ${estado}.`,
+        action: () => updateEtapa(etapa, estado, { skipConfirm: true })
+      });
+      return;
+    }
 
     setSavingAction(`etapa:${etapa.id}:${estado}`);
     try {
@@ -250,15 +275,17 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
       showToast('Etapa actualizada');
       onRefresh();
     } catch (err) {
-      showToast(err.message, 'danger');
+      showToast(onRequestError?.(err) || err.message, 'danger');
     } finally {
       setSavingAction('');
+      setConfirmModal(null);
     }
   };
 
   return (
-    <div className="mechanic-shell">
-      <section className="mechanic-list panel">
+    <>
+      <div className="mechanic-shell">
+        <section className="mechanic-list panel">
         <div className="mechanic-toolbar">
           <label className="search-box mechanic-search">
             <Search size={18} aria-hidden="true" />
@@ -277,7 +304,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
         </div>
 
         {loading ? <EmptyState text="Cargando trabajos..." /> : null}
-        {error ? <EmptyState text={error} tone="danger" /> : null}
+        {error ? <ErrorState text={error} onRetry={onRefresh} /> : null}
         {!loading && !error && !filteredTrabajos.length ? <EmptyState text="Sin trabajos asignados" /> : null}
 
         <div className="work-card-list">
@@ -295,12 +322,12 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
             </button>
           ))}
         </div>
-      </section>
+        </section>
 
-      <section className="mechanic-detail panel">
+        <section className="mechanic-detail panel">
         {!selectedId ? <EmptyState text="Selecciona un trabajo" /> : null}
         {detailLoading ? <EmptyState text="Cargando detalle..." /> : null}
-        {detailError ? <EmptyState text={detailError} tone="danger" /> : null}
+        {detailError ? <ErrorState text={detailError} onRetry={refreshDetail} /> : null}
         {!detailLoading && !detailError && detail ? (
           <TrabajoDetalle
             detail={detail}
@@ -320,8 +347,15 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
             onUpdateEtapa={updateEtapa}
           />
         ) : null}
-      </section>
-    </div>
+        </section>
+      </div>
+      <ConfirmModal
+        confirm={confirmModal}
+        saving={Boolean(savingAction)}
+        onCancel={() => setConfirmModal(null)}
+        onConfirm={() => confirmModal?.action?.()}
+      />
+    </>
   );
 }
 

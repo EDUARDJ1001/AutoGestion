@@ -125,13 +125,21 @@ button {
 }
 
 .form-error,
+.form-notice,
 .empty-danger {
   color: #9c2f32;
   background: #fff1f1;
   border: 1px solid #f0cccc;
 }
 
-.form-error {
+.form-notice {
+  color: #265c7b;
+  background: #eef7fb;
+  border-color: #c7ddea;
+}
+
+.form-error,
+.form-notice {
   min-height: 38px;
   display: flex;
   align-items: center;
@@ -556,6 +564,24 @@ td {
   padding: 18px;
 }
 
+.error-state {
+  min-height: 148px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  border-radius: 8px;
+  color: #9c2f32;
+  background: #fff1f1;
+  border: 1px solid #f0cccc;
+  text-align: center;
+  padding: 18px;
+}
+
+.error-state strong {
+  max-width: 560px;
+  font-size: 15px;
+}
+
 .modal-layer {
   position: fixed;
   z-index: 50;
@@ -580,6 +606,31 @@ td {
 
 .status-panel {
   width: min(100%, 520px);
+}
+
+.confirm-panel {
+  width: min(100%, 460px);
+}
+
+.confirm-content {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 22px 22px 8px;
+  color: #405160;
+  text-align: center;
+}
+
+.confirm-content svg {
+  color: #d67b43;
+}
+
+.confirm-content p {
+  margin: 0;
+}
+
+.confirm-actions {
+  padding: 12px 18px 18px;
 }
 
 .modal-header {

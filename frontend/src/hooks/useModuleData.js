@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getModuleData } from '../api/client';
+import { getModuleData, isAuthError } from '../api/client';
 
-export const useModuleData = (activeModule, session, reloadKey) => {
+export const useModuleData = (activeModule, session, reloadKey, onSessionExpired) => {
   const [moduleData, setModuleData] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +21,13 @@ export const useModuleData = (activeModule, session, reloadKey) => {
       })
       .catch((err) => {
         if (!ignore) {
-          setError(err.status === 401 ? 'Sesion expirada' : err.message);
+          if (isAuthError(err)) {
+            onSessionExpired?.();
+            setError('Sesion expirada');
+            return;
+          }
+
+          setError(err.message);
         }
       })
       .finally(() => {
@@ -31,7 +37,7 @@ export const useModuleData = (activeModule, session, reloadKey) => {
     return () => {
       ignore = true;
     };
-  }, [activeModule, reloadKey, session]);
+  }, [activeModule, onSessionExpired, reloadKey, session]);
 
   return {
     moduleData,

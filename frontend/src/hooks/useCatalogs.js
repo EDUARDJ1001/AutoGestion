@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../api/client';
+import { apiRequest, isAuthError } from '../api/client';
 import { stripAccents } from '../utils/formatters';
 
 const initialCatalogs = {
@@ -30,7 +30,7 @@ const resourceKeys = {
   flujosTrabajo: 'flujos'
 };
 
-export const useCatalogs = (session, reloadKey) => {
+export const useCatalogs = (session, reloadKey, onSessionExpired) => {
   const [catalogs, setCatalogs] = useState(initialCatalogs);
   const [catalogLoading, setCatalogLoading] = useState(false);
 
@@ -49,7 +49,13 @@ export const useCatalogs = (session, reloadKey) => {
 
         const next = { ...initialCatalogs };
         results.forEach((result) => {
-          if (result.status !== 'fulfilled') return;
+          if (result.status !== 'fulfilled') {
+            if (isAuthError(result.reason)) {
+              onSessionExpired?.();
+            }
+
+            return;
+          }
 
           const [key, data] = result.value;
           next[key] = data[resourceKeys[key]] || [];
@@ -64,7 +70,7 @@ export const useCatalogs = (session, reloadKey) => {
     return () => {
       ignore = true;
     };
-  }, [reloadKey, session]);
+  }, [onSessionExpired, reloadKey, session]);
 
   return {
     catalogs,

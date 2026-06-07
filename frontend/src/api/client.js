@@ -2,6 +2,26 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/ap
 
 export const API_ORIGIN = new URL(API_URL).origin;
 
+export class ApiError extends Error {
+  constructor(message, { status, payload, cause } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.payload = payload;
+    this.cause = cause;
+  }
+}
+
+const extractValidationMessage = (payload) => {
+  if (!Array.isArray(payload?.error)) return '';
+
+  return payload.error
+    .map((item) => item.msg || item.message)
+    .filter(Boolean)
+    .slice(0, 3)
+    .join('. ');
+};
+
 const parseResponse = async (response) => {
   const contentType = response.headers.get('content-type') || '';
   const payload = contentType.includes('application/json')
@@ -9,10 +29,9 @@ const parseResponse = async (response) => {
     : { ok: false, message: await response.text() };
 
   if (!response.ok || payload.ok === false) {
-    const error = new Error(payload.message || 'No se pudo completar la solicitud');
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
+    const detail = extractValidationMessage(payload);
+    const message = detail || payload.message || 'No se pudo completar la solicitud';
+    throw new ApiError(message, { status: response.status, payload });
   }
 
   return payload.data || {};
@@ -30,14 +49,28 @@ export const apiRequest = async (path, { token, method = 'GET', body } = {}) => 
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined && !isFormData ? JSON.stringify(body) : body
-  });
+  let response;
 
-  return parseResponse(response);
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined && !isFormData ? JSON.stringify(body) : body
+    });
+
+    return await parseResponse(response);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('No se pudo conectar con el servidor. Revisa la red o intenta actualizar.', {
+      cause: error
+    });
+  }
 };
+
+export const isAuthError = (error) => [401, 403].includes(error?.status);
 
 export const login = (credentials) => apiRequest('/auth/login', {
   method: 'POST',
