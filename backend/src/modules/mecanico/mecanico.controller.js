@@ -14,11 +14,13 @@ const normalizeNullableString = (value) => {
 };
 
 const enrichTrabajo = async (trabajo) => {
-  const [servicios, productos, fotos, bitacora] = await Promise.all([
+  const [servicios, productos, fotos, bitacora, etapas, progreso] = await Promise.all([
     visitasModel.getServicios(trabajo.id),
     inventarioModel.listProductosUsadosByVisita(trabajo.id),
     visitasModel.getFotos(trabajo.id),
-    visitasModel.getBitacora(trabajo.id)
+    visitasModel.getBitacora(trabajo.id),
+    visitasModel.getEtapas(trabajo.id),
+    visitasModel.getProgreso(trabajo.id)
   ]);
 
   return {
@@ -26,7 +28,9 @@ const enrichTrabajo = async (trabajo) => {
     servicios,
     productos,
     fotos,
-    bitacora
+    bitacora,
+    etapas,
+    progreso
   };
 };
 
@@ -105,6 +109,30 @@ const addProductoUsado = async (req, res) => {
   }
 };
 
+const updateEtapa = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const etapaId = Number(req.params.etapaId);
+  const trabajo = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
+
+  if (!trabajo) {
+    return errorResponse(res, 'Trabajo no encontrado o no asignado a este mecanico', undefined, 404);
+  }
+
+  const etapa = await visitasModel.updateEtapa(visitaId, etapaId, {
+    estado: req.body.estado,
+    observaciones: normalizeNullableString(req.body.observaciones),
+    usuarioId: req.user.id
+  });
+
+  if (!etapa) {
+    return errorResponse(res, 'Etapa no encontrada', undefined, 404);
+  }
+
+  const trabajoActualizado = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
+
+  return successResponse(res, 'Etapa actualizada correctamente', await enrichTrabajo(trabajoActualizado));
+};
+
 const addFoto = async (req, res) => {
   const visitaId = Number(req.params.id);
   const trabajo = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
@@ -137,6 +165,7 @@ module.exports = {
   listMisTrabajos,
   getMiTrabajo,
   updateEstado,
+  updateEtapa,
   addProductoUsado,
   addFoto
 };

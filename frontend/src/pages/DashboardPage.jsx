@@ -41,6 +41,32 @@ function DashboardPage({ data, loading }) {
         />
       </section>
 
+      <section className="panel progress-panel">
+        <div className="panel-heading">
+          <h2>Progreso en taller</h2>
+        </div>
+        <div className="progress-list">
+          {(data?.progreso_visitas || []).length ? data.progreso_visitas.map((visita) => (
+            <article className={visita.alerta_sin_avance ? 'progress-card progress-card-warning' : 'progress-card'} key={visita.visita_id}>
+              <div className="progress-card-head">
+                <div>
+                  <strong>{[visita.placa, visita.marca, visita.modelo].filter(Boolean).join(' - ')}</strong>
+                  <span>{visita.cliente} · {visita.flujo_trabajo || 'Sin flujo'}</span>
+                </div>
+                <b>{Number(visita.porcentaje_avance || 0).toFixed(0)}%</b>
+              </div>
+              <div className="progress-track" aria-label={`Avance ${visita.porcentaje_avance || 0}%`}>
+                <span style={{ width: `${Math.min(Number(visita.porcentaje_avance || 0), 100)}%` }} />
+              </div>
+              <div className="progress-meta">
+                <span>{visita.etapa_actual || 'Sin etapa activa'}</span>
+                <span>{visita.alerta_sin_avance ? `Sin avance ${Number(visita.horas_sin_avance || 0).toFixed(0)}h` : formatDate(visita.fecha_ultima_actividad)}</span>
+              </div>
+            </article>
+          )) : <EmptyState text="Sin visitas con flujo activo" />}
+        </div>
+      </section>
+
       <section className="panel table-panel">
         <div className="panel-heading">
           <h2>Stock bajo</h2>

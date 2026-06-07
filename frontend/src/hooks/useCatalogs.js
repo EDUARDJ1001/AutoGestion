@@ -8,7 +8,8 @@ const initialCatalogs = {
   usuarios: [],
   mecanicos: [],
   categoriasServicio: [],
-  categoriasProducto: []
+  categoriasProducto: [],
+  flujosTrabajo: []
 };
 
 const catalogRequests = [
@@ -16,7 +17,8 @@ const catalogRequests = [
   ['vehiculos', '/vehiculos'],
   ['usuarios', '/usuarios'],
   ['categoriasServicio', '/categorias-servicio'],
-  ['categoriasProducto', '/categorias-producto']
+  ['categoriasProducto', '/categorias-producto'],
+  ['flujosTrabajo', '/flujos-trabajo']
 ];
 
 const resourceKeys = {
@@ -24,7 +26,8 @@ const resourceKeys = {
   vehiculos: 'vehiculos',
   usuarios: 'usuarios',
   categoriasServicio: 'categorias',
-  categoriasProducto: 'categorias'
+  categoriasProducto: 'categorias',
+  flujosTrabajo: 'flujos'
 };
 
 export const useCatalogs = (session, reloadKey) => {

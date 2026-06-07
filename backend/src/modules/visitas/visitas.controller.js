@@ -1,5 +1,6 @@
 const visitasModel = require('./visitas.model');
 const inventarioModel = require('../inventario/inventario.model');
+const flujosModel = require('../flujos/flujos.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
 const { cleanupUploadedFile } = require('../../middlewares/uploadMiddleware');
 
@@ -40,6 +41,7 @@ const buildVisitaPayload = (body, user, partial = false) => {
   assign('vehiculo_id', normalizeNullableNumber(body.vehiculo_id));
   assign('recibido_por', normalizeNullableNumber(body.recibido_por) || user?.id);
   assign('mecanico_asignado_id', normalizeNullableNumber(body.mecanico_asignado_id));
+  assign('flujo_trabajo_id', normalizeNullableNumber(body.flujo_trabajo_id));
   assign('fecha_entrega_estimada', normalizeNullableString(body.fecha_entrega_estimada));
   assign('fecha_entrega_real', normalizeNullableString(body.fecha_entrega_real));
   assign('kilometraje_ingreso', normalizeNullableNumber(body.kilometraje_ingreso));
@@ -69,6 +71,10 @@ const enrichVisita = async (visita) => {
     inventarioModel.listProductosUsadosByVisita(visita.id),
     visitasModel.getFotos(visita.id)
   ]);
+  const [etapas, progreso] = await Promise.all([
+    visitasModel.getEtapas(visita.id),
+    visitasModel.getProgreso(visita.id)
+  ]);
   const totalServicios = servicios.reduce((total, servicio) => {
     return total + Number(servicio.subtotal || 0);
   }, 0);
@@ -79,6 +85,8 @@ const enrichVisita = async (visita) => {
     productos,
     fotos,
     bitacora,
+    etapas,
+    progreso,
     totales: {
       servicios: Number(totalServicios.toFixed(2))
     }
@@ -98,6 +106,15 @@ const validateVisitaRelations = async (payload, res) => {
 
     if (!mecanicoExists) {
       errorResponse(res, 'El mecanico asignado no existe o esta inactivo', undefined, 400);
+      return false;
+    }
+  }
+
+  if (payload.flujo_trabajo_id) {
+    const flujoExists = await flujosModel.flujoActivo(payload.flujo_trabajo_id);
+
+    if (!flujoExists) {
+      errorResponse(res, 'El flujo de trabajo no existe o esta inactivo', undefined, 400);
       return false;
     }
   }
@@ -169,7 +186,17 @@ const createVisita = async (req, res) => {
 
   const visita = await visitasModel.create(payload, servicios);
 
-  return successResponse(res, 'Visita creada correctamente', await enrichVisita(visita), 201);
+  if (payload.flujo_trabajo_id) {
+    await flujosModel.inicializarEtapasVisita({
+      visitaId: visita.id,
+      flujoTrabajoId: payload.flujo_trabajo_id,
+      usuarioId: req.user?.id
+    });
+  }
+
+  const visitaCreada = await visitasModel.findById(visita.id);
+
+  return successResponse(res, 'Visita creada correctamente', await enrichVisita(visitaCreada), 201);
 };
 
 const updateVisita = async (req, res) => {
@@ -183,13 +210,32 @@ const updateVisita = async (req, res) => {
     }
   }
 
+  if (payload.flujo_trabajo_id) {
+    const flujoExists = await flujosModel.flujoActivo(payload.flujo_trabajo_id);
+
+    if (!flujoExists) {
+      return errorResponse(res, 'El flujo de trabajo no existe o esta inactivo', undefined, 400);
+    }
+  }
+
   const visita = await visitasModel.update(Number(req.params.id), payload);
 
   if (!visita) {
     return errorResponse(res, 'Visita no encontrada', undefined, 404);
   }
 
-  return successResponse(res, 'Visita actualizada correctamente', await enrichVisita(visita));
+  if (payload.flujo_trabajo_id) {
+    await flujosModel.inicializarEtapasVisita({
+      visitaId: visita.id,
+      flujoTrabajoId: payload.flujo_trabajo_id,
+      usuarioId: req.user?.id,
+      replace: true
+    });
+  }
+
+  const visitaActualizada = await visitasModel.findById(visita.id);
+
+  return successResponse(res, 'Visita actualizada correctamente', await enrichVisita(visitaActualizada));
 };
 
 const updateEstado = async (req, res) => {
@@ -242,6 +288,89 @@ const getBitacora = async (req, res) => {
   return successResponse(res, 'Bitacora de visita obtenida correctamente', {
     visita,
     bitacora
+  });
+};
+
+const getEtapas = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const visita = await visitasModel.findById(visitaId);
+
+  if (!visita) {
+    return errorResponse(res, 'Visita no encontrada', undefined, 404);
+  }
+
+  const [etapas, progreso] = await Promise.all([
+    visitasModel.getEtapas(visitaId),
+    visitasModel.getProgreso(visitaId)
+  ]);
+
+  return successResponse(res, 'Etapas de visita obtenidas correctamente', {
+    visita,
+    etapas,
+    progreso
+  });
+};
+
+const inicializarEtapas = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const visita = await visitasModel.findById(visitaId);
+
+  if (!visita) {
+    return errorResponse(res, 'Visita no encontrada', undefined, 404);
+  }
+
+  const flujoTrabajoId = normalizeNullableNumber(req.body.flujo_trabajo_id || visita.flujo_trabajo_id);
+
+  if (!flujoTrabajoId) {
+    return errorResponse(res, 'flujo_trabajo_id es requerido', undefined, 400);
+  }
+
+  const flujoExists = await flujosModel.flujoActivo(flujoTrabajoId);
+
+  if (!flujoExists) {
+    return errorResponse(res, 'El flujo de trabajo no existe o esta inactivo', undefined, 400);
+  }
+
+  await flujosModel.inicializarEtapasVisita({
+    visitaId,
+    flujoTrabajoId,
+    usuarioId: req.user?.id,
+    replace: req.body.replace !== false
+  });
+
+  const [etapas, progreso] = await Promise.all([
+    visitasModel.getEtapas(visitaId),
+    visitasModel.getProgreso(visitaId)
+  ]);
+
+  return successResponse(res, 'Etapas inicializadas correctamente', {
+    etapas,
+    progreso
+  });
+};
+
+const updateEtapa = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const etapaId = Number(req.params.etapaId);
+  const etapa = await visitasModel.updateEtapa(visitaId, etapaId, {
+    estado: req.body.estado,
+    observaciones: normalizeNullableString(req.body.observaciones),
+    usuarioId: req.user?.id
+  });
+
+  if (!etapa) {
+    return errorResponse(res, 'Etapa no encontrada', undefined, 404);
+  }
+
+  const [etapas, progreso] = await Promise.all([
+    visitasModel.getEtapas(visitaId),
+    visitasModel.getProgreso(visitaId)
+  ]);
+
+  return successResponse(res, 'Etapa actualizada correctamente', {
+    etapa,
+    etapas,
+    progreso
   });
 };
 
@@ -321,6 +450,9 @@ module.exports = {
   updateEstado,
   addServicios,
   getBitacora,
+  getEtapas,
+  inicializarEtapas,
+  updateEtapa,
   addProductoUsado,
   addFoto
 };

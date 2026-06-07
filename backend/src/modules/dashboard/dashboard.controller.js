@@ -23,13 +23,15 @@ const getResumen = async (req, res) => {
     inventario,
     visitasPorEstado,
     visitasRecientes,
-    stockBajo
+    stockBajo,
+    progresoVisitas
   ] = await Promise.all([
     dashboardModel.getResumenVisitas(),
     dashboardModel.getResumenInventario(),
     dashboardModel.getVisitasPorEstado(),
     dashboardModel.getIngresosRecientes(10),
-    dashboardModel.getStockBajo()
+    dashboardModel.getStockBajo(),
+    dashboardModel.getProgresoVisitas(20)
   ]);
 
   return successResponse(res, 'Resumen de dashboard obtenido correctamente', {
@@ -44,12 +46,22 @@ const getResumen = async (req, res) => {
     inventario,
     visitas_por_estado: visitasPorEstado,
     visitas_recientes: visitasRecientes,
-    stock_bajo: stockBajo.slice(0, 10)
+    stock_bajo: stockBajo.slice(0, 10),
+    progreso_visitas: progresoVisitas
+  });
+};
+
+const getProgresoVisitas = async (req, res) => {
+  const visitas = await dashboardModel.getProgresoVisitas(Number(req.query.limit || 20));
+
+  return successResponse(res, 'Progreso de visitas obtenido correctamente', {
+    visitas
   });
 };
 
 module.exports = {
   getVisitasActivas,
   getStockBajo,
-  getResumen
+  getResumen,
+  getProgresoVisitas
 };

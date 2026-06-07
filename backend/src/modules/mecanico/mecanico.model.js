@@ -14,6 +14,8 @@ const TRABAJO_SELECT = `
   ve.color,
   v.mecanico_asignado_id,
   CONCAT(um.nombre, ' ', um.apellido) AS mecanico_asignado_nombre,
+  v.flujo_trabajo_id,
+  ft.nombre AS flujo_trabajo_nombre,
   v.fecha_ingreso,
   v.fecha_entrega_estimada,
   v.fecha_entrega_real,
@@ -23,6 +25,7 @@ const TRABAJO_SELECT = `
   v.diagnostico,
   v.estado,
   v.observaciones,
+  v.fecha_ultima_actividad,
   v.fecha_actualizacion
 `;
 
@@ -58,6 +61,7 @@ const listMisTrabajos = async (mecanicoId, { estado, activas = true } = {}) => {
       INNER JOIN clientes c ON c.id = v.cliente_id
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
+      LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
       WHERE ${filters.join(' AND ')}
       ORDER BY v.fecha_ingreso DESC, v.id DESC
     `,
@@ -75,6 +79,7 @@ const findTrabajoById = async (mecanicoId, visitaId) => {
       INNER JOIN clientes c ON c.id = v.cliente_id
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
+      LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
       WHERE v.id = $2
         AND ${assignmentFilter}
       LIMIT 1
@@ -92,7 +97,8 @@ const updateEstado = async (mecanicoId, visitaId, { estado, observaciones, diagn
       SET
         estado = $3::estado_visita,
         observaciones = COALESCE($4, v.observaciones),
-        diagnostico = COALESCE($5, v.diagnostico)
+        diagnostico = COALESCE($5, v.diagnostico),
+        fecha_ultima_actividad = NOW()
       WHERE v.id = $2
         AND ${assignmentFilter}
       RETURNING v.id

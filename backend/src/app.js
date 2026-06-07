@@ -17,6 +17,7 @@ const inventarioRoutes = require('./modules/inventario/inventario.routes');
 const productosRoutes = require('./modules/inventario/productos.routes');
 const categoriasProductoRoutes = require('./modules/inventario/categoriasProducto.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+const flujosRoutes = require('./modules/flujos/flujos.routes');
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/inventario', inventarioRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/categorias-producto', categoriasProductoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/flujos-trabajo', flujosRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

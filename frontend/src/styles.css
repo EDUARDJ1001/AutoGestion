@@ -388,6 +388,10 @@ button {
   min-height: 248px;
 }
 
+.progress-panel {
+  min-height: 220px;
+}
+
 .panel-heading {
   min-height: 36px;
   margin-bottom: 10px;
@@ -458,6 +462,79 @@ td {
 .row-actions {
   display: inline-flex;
   gap: 6px;
+}
+
+.progress-list {
+  display: grid;
+  gap: 10px;
+}
+
+.progress-card,
+.stage-progress {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.progress-card-warning,
+.stage-progress-warning {
+  border-color: #e9b6b8;
+  background: #fff6f6;
+  box-shadow: inset 4px 0 0 #ba4f54;
+}
+
+.progress-card-head,
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-card-head div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.progress-card-head strong,
+.progress-card-head span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-card-head span,
+.progress-meta {
+  color: #657484;
+  font-size: 13px;
+}
+
+.progress-card-head b {
+  color: #265c7b;
+  font-size: 20px;
+}
+
+.progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6ecf1;
+}
+
+.progress-track span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: #2f6f92;
+}
+
+.progress-card-warning .progress-track span,
+.stage-progress-warning .progress-track span {
+  background: #ba4f54;
 }
 
 .table-action {
@@ -758,6 +835,65 @@ td {
   border-color: #265c7b;
 }
 
+.stage-list {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.stage-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stage-card span {
+  color: #657484;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stage-en-proceso {
+  border-color: #9cc4d7;
+  box-shadow: inset 4px 0 0 #265c7b;
+}
+
+.stage-completado {
+  border-color: #b8dfc8;
+  box-shadow: inset 4px 0 0 #2f6f92;
+}
+
+.stage-omitido {
+  opacity: 0.72;
+}
+
+.stage-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stage-actions button {
+  min-height: 42px;
+  border: 1px solid #ccd6df;
+  border-radius: 6px;
+  color: #263745;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.stage-actions button:hover {
+  background: #eef3f6;
+}
+
 .mechanic-form {
   display: grid;
   gap: 12px;
@@ -913,6 +1049,12 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .progress-card-head,
+  .progress-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .mechanic-shell {
     grid-template-columns: 1fr;
   }
@@ -999,6 +1141,7 @@ td {
   .detail-grid,
   .state-button-grid,
   .photo-grid,
+  .stage-actions,
   .product-form,
   .photo-form {
     grid-template-columns: 1fr;

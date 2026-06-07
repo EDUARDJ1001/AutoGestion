@@ -24,4 +24,9 @@ router.get(
   asyncHandler(dashboardController.getStockBajo)
 );
 
+router.get(
+  '/progreso-visitas',
+  asyncHandler(dashboardController.getProgresoVisitas)
+);
+
 module.exports = router;

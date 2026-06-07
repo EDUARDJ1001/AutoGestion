@@ -20,12 +20,14 @@ const estadosVisita = [
   'Entregado',
   'Cancelado'
 ];
+const estadosEtapa = ['Pendiente', 'En proceso', 'Completado', 'Omitido'];
 const tiposFoto = ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'];
 
 const visitaCreateValidators = [
   body('cliente_id').isInt({ min: 1 }).withMessage('cliente_id es requerido'),
   body('vehiculo_id').isInt({ min: 1 }).withMessage('vehiculo_id es requerido'),
   body('mecanico_asignado_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_asignado_id debe ser entero'),
+  body('flujo_trabajo_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('flujo_trabajo_id debe ser entero'),
   body('fecha_entrega_estimada').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_estimada invalida'),
   body('kilometraje_ingreso').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0 }).withMessage('Kilometraje invalido'),
   body('motivo_visita').trim().notEmpty().withMessage('motivo_visita es requerido'),
@@ -45,6 +47,7 @@ const visitaCreateValidators = [
 const visitaUpdateValidators = [
   param('id').isInt({ min: 1 }).withMessage('ID invalido'),
   body('mecanico_asignado_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('mecanico_asignado_id debe ser entero'),
+  body('flujo_trabajo_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('flujo_trabajo_id debe ser entero'),
   body('fecha_entrega_estimada').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_estimada invalida'),
   body('fecha_entrega_real').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_entrega_real invalida'),
   body('kilometraje_ingreso').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0 }).withMessage('Kilometraje invalido'),
@@ -85,6 +88,15 @@ router.get(
 );
 
 router.get(
+  '/:id/etapas',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.getEtapas)
+);
+
+router.get(
   '/:id',
   [
     param('id').isInt({ min: 1 }).withMessage('ID invalido')
@@ -116,6 +128,29 @@ router.patch(
   ],
   validateRequest,
   asyncHandler(visitasController.updateEstado)
+);
+
+router.post(
+  '/:id/etapas/inicializar',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('flujo_trabajo_id').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('flujo_trabajo_id debe ser entero'),
+    body('replace').optional().isBoolean().withMessage('replace debe ser booleano')
+  ],
+  validateRequest,
+  asyncHandler(visitasController.inicializarEtapas)
+);
+
+router.patch(
+  '/:id/etapas/:etapaId',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    param('etapaId').isInt({ min: 1 }).withMessage('ID de etapa invalido'),
+    body('estado').isIn(estadosEtapa).withMessage('Estado de etapa invalido'),
+    body('observaciones').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(visitasController.updateEtapa)
 );
 
 router.post(

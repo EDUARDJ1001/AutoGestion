@@ -232,6 +232,30 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
     }
   };
 
+  const updateEtapa = async (etapa, estado) => {
+    if (!detail?.visita) return;
+
+    setSavingAction(`etapa:${etapa.id}:${estado}`);
+    try {
+      const payload = await crudRequest({
+        path: `/mecanico/mis-trabajos/${detail.visita.id}/etapas/${etapa.id}`,
+        token: session.token,
+        method: 'PATCH',
+        body: {
+          estado,
+          observaciones: noteForm.observaciones || undefined
+        }
+      });
+      setDetail(payload);
+      showToast('Etapa actualizada');
+      onRefresh();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    } finally {
+      setSavingAction('');
+    }
+  };
+
   return (
     <div className="mechanic-shell">
       <section className="mechanic-list panel">
@@ -293,6 +317,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast }) {
             onSaveNotes={saveNotes}
             onAddProduct={addProduct}
             onUploadPhoto={uploadPhoto}
+            onUpdateEtapa={updateEtapa}
           />
         ) : null}
       </section>
@@ -314,9 +339,10 @@ function TrabajoDetalle({
   onPhotoChange,
   onSaveNotes,
   onAddProduct,
-  onUploadPhoto
+  onUploadPhoto,
+  onUpdateEtapa
 }) {
-  const { visita, servicios = [], productos: productosUsados = [], fotos = [], bitacora = [] } = detail;
+  const { visita, servicios = [], productos: productosUsados = [], fotos = [], bitacora = [], etapas = [], progreso } = detail;
 
   return (
     <div className="work-detail-content">
@@ -367,6 +393,45 @@ function TrabajoDetalle({
               {estado}
             </button>
           ))}
+        </div>
+      </section>
+
+      <section className="mechanic-section">
+        <h3>Linea de trabajo</h3>
+        {progreso ? (
+          <div className={progreso.alerta_sin_avance ? 'stage-progress stage-progress-warning' : 'stage-progress'}>
+            <div className="progress-card-head">
+              <div>
+                <strong>{progreso.flujo_trabajo || visita.flujo_trabajo_nombre || 'Flujo de trabajo'}</strong>
+                <span>{progreso.etapa_actual || 'Sin etapa activa'}</span>
+              </div>
+              <b>{Number(progreso.porcentaje_avance || 0).toFixed(0)}%</b>
+            </div>
+            <div className="progress-track">
+              <span style={{ width: `${Math.min(Number(progreso.porcentaje_avance || 0), 100)}%` }} />
+            </div>
+          </div>
+        ) : null}
+        <div className="stage-list">
+          {etapas.length ? etapas.map((etapa) => (
+            <article className={`stage-card stage-${String(etapa.estado).toLowerCase().replaceAll(' ', '-')}`} key={etapa.id}>
+              <div>
+                <strong>{etapa.orden}. {etapa.nombre_etapa}</strong>
+                <span>{etapa.estado}</span>
+              </div>
+              <div className="stage-actions">
+                <button type="button" onClick={() => onUpdateEtapa(etapa, 'En proceso')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                  En proceso
+                </button>
+                <button type="button" onClick={() => onUpdateEtapa(etapa, 'Completado')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                  Completado
+                </button>
+                <button type="button" onClick={() => onUpdateEtapa(etapa, 'Omitido')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                  Omitir
+                </button>
+              </div>
+            </article>
+          )) : <div className="compact-empty">Sin etapas inicializadas</div>}
         </div>
       </section>
 

@@ -16,6 +16,8 @@ const VISITA_SELECT = `
   CONCAT(ur.nombre, ' ', ur.apellido) AS recibido_por_nombre,
   v.mecanico_asignado_id,
   CONCAT(um.nombre, ' ', um.apellido) AS mecanico_asignado_nombre,
+  v.flujo_trabajo_id,
+  ft.nombre AS flujo_trabajo_nombre,
   v.fecha_ingreso,
   v.fecha_entrega_estimada,
   v.fecha_entrega_real,
@@ -25,6 +27,7 @@ const VISITA_SELECT = `
   v.diagnostico,
   v.estado,
   v.observaciones,
+  v.fecha_ultima_actividad,
   v.fecha_creacion,
   v.fecha_actualizacion
 `;
@@ -107,6 +110,7 @@ const list = async (filters = {}) => {
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios ur ON ur.id = v.recibido_por
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
+      LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
       ${where}
       ORDER BY v.fecha_ingreso DESC, v.id DESC
     `,
@@ -129,6 +133,7 @@ const findById = async (id) => {
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios ur ON ur.id = v.recibido_por
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
+      LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
       WHERE v.id = $1
       LIMIT 1
     `,
@@ -233,6 +238,7 @@ const create = async (visita, servicios = []) => {
           vehiculo_id,
           recibido_por,
           mecanico_asignado_id,
+          flujo_trabajo_id,
           fecha_entrega_estimada,
           kilometraje_ingreso,
           motivo_visita,
@@ -241,7 +247,7 @@ const create = async (visita, servicios = []) => {
           estado,
           observaciones
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10::estado_visita, 'Recibido'::estado_visita), $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11::estado_visita, 'Recibido'::estado_visita), $12)
         RETURNING id
       `,
       [
@@ -249,6 +255,7 @@ const create = async (visita, servicios = []) => {
         visita.vehiculo_id,
         visita.recibido_por || null,
         visita.mecanico_asignado_id || null,
+        visita.flujo_trabajo_id || null,
         visita.fecha_entrega_estimada || null,
         visita.kilometraje_ingreso ?? null,
         visita.motivo_visita,
@@ -274,6 +281,7 @@ const create = async (visita, servicios = []) => {
 const update = async (id, fields) => {
   const allowedFields = [
     'mecanico_asignado_id',
+    'flujo_trabajo_id',
     'fecha_entrega_estimada',
     'fecha_entrega_real',
     'kilometraje_ingreso',
@@ -289,7 +297,11 @@ const update = async (id, fields) => {
   allowedFields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(fields, field)) {
       params.push(fields[field]);
-      sets.push(field === 'estado' ? `${field} = $${params.length}::estado_visita` : `${field} = $${params.length}`);
+      if (field === 'estado') {
+        sets.push(`${field} = $${params.length}::estado_visita`);
+      } else {
+        sets.push(`${field} = $${params.length}`);
+      }
     }
   });
 
@@ -322,6 +334,7 @@ const updateEstado = async (id, { estado, observaciones }) => {
       SET
         estado = $1::estado_visita,
         observaciones = COALESCE($2, observaciones),
+        fecha_ultima_actividad = NOW(),
         fecha_entrega_real = CASE
           WHEN $1::estado_visita = 'Entregado'::estado_visita THEN COALESCE(fecha_entrega_real, NOW())
           ELSE fecha_entrega_real
@@ -460,6 +473,146 @@ const getFotos = async (visitaId) => {
   return result.rows;
 };
 
+const getEtapas = async (visitaId) => {
+  const result = await query(
+    `
+      SELECT
+        ve.id,
+        ve.visita_id,
+        ve.flujo_etapa_id,
+        ve.nombre_etapa,
+        ve.descripcion,
+        ve.orden,
+        ve.estado,
+        ve.fecha_inicio,
+        ve.fecha_fin,
+        ve.actualizado_por,
+        CONCAT(u.nombre, ' ', u.apellido) AS actualizado_por_nombre,
+        ve.observaciones,
+        ve.fecha_creacion,
+        ve.fecha_actualizacion
+      FROM visita_etapas ve
+      LEFT JOIN usuarios u ON u.id = ve.actualizado_por
+      WHERE ve.visita_id = $1
+      ORDER BY ve.orden ASC, ve.id ASC
+    `,
+    [visitaId]
+  );
+
+  return result.rows;
+};
+
+const getProgreso = async (visitaId) => {
+  const result = await query(
+    `
+      SELECT *
+      FROM vista_progreso_visitas
+      WHERE visita_id = $1
+      LIMIT 1
+    `,
+    [visitaId]
+  );
+
+  return result.rows[0] || null;
+};
+
+const findEtapaById = async (visitaId, etapaId) => {
+  const result = await query(
+    `
+      SELECT *
+      FROM visita_etapas
+      WHERE visita_id = $1
+        AND id = $2
+      LIMIT 1
+    `,
+    [visitaId, etapaId]
+  );
+
+  return result.rows[0] || null;
+};
+
+const updateEtapa = async (visitaId, etapaId, { estado, observaciones, usuarioId }) => {
+  const result = await transaction(async (client) => {
+    const currentResult = await client.query(
+      `
+        SELECT *
+        FROM visita_etapas
+        WHERE visita_id = $1
+          AND id = $2
+        LIMIT 1
+      `,
+      [visitaId, etapaId]
+    );
+    const current = currentResult.rows[0];
+
+    if (!current) {
+      return null;
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE visita_etapas
+        SET
+          estado = $3::estado_etapa_visita,
+          observaciones = COALESCE($4, observaciones),
+          actualizado_por = $5,
+          fecha_inicio = CASE
+            WHEN $3::estado_etapa_visita IN ('En proceso'::estado_etapa_visita, 'Completado'::estado_etapa_visita)
+              THEN COALESCE(fecha_inicio, NOW())
+            ELSE fecha_inicio
+          END,
+          fecha_fin = CASE
+            WHEN $3::estado_etapa_visita IN ('Completado'::estado_etapa_visita, 'Omitido'::estado_etapa_visita)
+              THEN COALESCE(fecha_fin, NOW())
+            WHEN $3::estado_etapa_visita = 'En proceso'::estado_etapa_visita
+              THEN NULL
+            ELSE fecha_fin
+          END,
+          fecha_actualizacion = NOW()
+        WHERE visita_id = $1
+          AND id = $2
+        RETURNING *
+      `,
+      [visitaId, etapaId, estado, observaciones || null, usuarioId || null]
+    );
+
+    if (estado === 'Completado') {
+      await client.query(
+        `
+          UPDATE visita_etapas
+          SET
+            estado = 'En proceso'::estado_etapa_visita,
+            fecha_inicio = COALESCE(fecha_inicio, NOW()),
+            actualizado_por = COALESCE(actualizado_por, $3),
+            fecha_actualizacion = NOW()
+          WHERE visita_id = $1
+            AND orden = (
+              SELECT MIN(orden)
+              FROM visita_etapas
+              WHERE visita_id = $1
+                AND orden > $2
+                AND estado = 'Pendiente'::estado_etapa_visita
+            )
+        `,
+        [visitaId, current.orden, usuarioId || null]
+      );
+    }
+
+    await client.query(
+      `
+        UPDATE visitas
+        SET fecha_ultima_actividad = NOW()
+        WHERE id = $1
+      `,
+      [visitaId]
+    );
+
+    return updateResult.rows[0];
+  });
+
+  return result;
+};
+
 module.exports = {
   list,
   listActivas,
@@ -474,5 +627,9 @@ module.exports = {
   getServicios,
   getBitacora,
   addFoto,
-  getFotos
+  getFotos,
+  getEtapas,
+  getProgreso,
+  findEtapaById,
+  updateEtapa
 };

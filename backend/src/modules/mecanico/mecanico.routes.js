@@ -18,6 +18,7 @@ const estadosMecanico = [
   'En prueba',
   'Finalizado'
 ];
+const estadosEtapa = ['Pendiente', 'En proceso', 'Completado', 'Omitido'];
 const tiposFoto = ['Vehículo', 'Visita', 'Daño', 'Avance', 'Final', 'VIN', 'Kilometraje', 'Otro'];
 
 router.use(authMiddleware);
@@ -64,6 +65,18 @@ router.post(
   ],
   validateRequest,
   asyncHandler(mecanicoController.addProductoUsado)
+);
+
+router.patch(
+  '/mis-trabajos/:id/etapas/:etapaId',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    param('etapaId').isInt({ min: 1 }).withMessage('ID de etapa invalido'),
+    body('estado').isIn(estadosEtapa).withMessage('Estado de etapa invalido'),
+    body('observaciones').optional({ nullable: true, checkFalsy: true }).trim()
+  ],
+  validateRequest,
+  asyncHandler(mecanicoController.updateEtapa)
 );
 
 router.post(

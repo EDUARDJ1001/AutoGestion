@@ -102,11 +102,27 @@ const getIngresosRecientes = async (limit = 10) => {
   return result.rows;
 };
 
+const getProgresoVisitas = async (limit = 20) => {
+  const result = await query(
+    `
+      SELECT *
+      FROM vista_progreso_visitas
+      WHERE estado_visita NOT IN ('Entregado'::estado_visita, 'Cancelado'::estado_visita)
+      ORDER BY alerta_sin_avance DESC, fecha_ultima_actividad ASC, visita_id DESC
+      LIMIT $1
+    `,
+    [limit]
+  );
+
+  return result.rows;
+};
+
 module.exports = {
   getVisitasActivas,
   getStockBajo,
   getResumenVisitas,
   getResumenInventario,
   getVisitasPorEstado,
-  getIngresosRecientes
+  getIngresosRecientes,
+  getProgresoVisitas
 };
