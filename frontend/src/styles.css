@@ -124,6 +124,13 @@ button {
   box-shadow: 0 0 0 3px rgba(38, 92, 123, 0.12);
 }
 
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color: #ba4f54;
+  box-shadow: 0 0 0 3px rgba(186, 79, 84, 0.11);
+}
+
 .form-error,
 .form-notice,
 .empty-danger {
@@ -146,6 +153,12 @@ button {
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 14px;
+}
+
+.field-error {
+  color: #9c2f32;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .primary-button,

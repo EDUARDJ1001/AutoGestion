@@ -3,6 +3,8 @@ import { formatDate, normalizeVisitStatus, optionLabel, toDateTimeLocal, vehicle
 
 export const hasRole = (session, roles = []) => roles.includes(session?.user?.rol);
 
+const nextYear = new Date().getFullYear() + 1;
+
 export const moduleConfig = {
   usuarios: {
     path: '/usuarios',
@@ -18,11 +20,11 @@ export const moduleConfig = {
     ],
     fields: () => [
       { name: 'rol_id', label: 'Rol', type: 'select', options: roleOptions, required: true, valueType: 'number' },
-      { name: 'nombre', label: 'Nombre', required: true },
-      { name: 'apellido', label: 'Apellido', required: true },
-      { name: 'username', label: 'Usuario', required: true, minLength: 3 },
+      { name: 'nombre', label: 'Nombre', required: true, maxLength: 120 },
+      { name: 'apellido', label: 'Apellido', required: true, maxLength: 120 },
+      { name: 'username', label: 'Usuario', required: true, minLength: 3, maxLength: 80 },
       { name: 'email', label: 'Email', type: 'email' },
-      { name: 'telefono', label: 'Telefono' },
+      { name: 'telefono', label: 'Telefono', kind: 'phone', maxLength: 30 },
       { name: 'password', label: 'Contrasena', type: 'password', requiredOnCreate: true, omitEmpty: true, minLength: 6 },
       { name: 'estado', label: 'Estado', type: 'select', options: estadosGenerales, defaultValue: 'Activo' }
     ]
@@ -41,10 +43,10 @@ export const moduleConfig = {
       ['estado', 'Estado']
     ],
     fields: () => [
-      { name: 'nombre', label: 'Nombre', required: true },
-      { name: 'identidad_rtn', label: 'Identidad/RTN' },
-      { name: 'telefono', label: 'Telefono' },
-      { name: 'whatsapp', label: 'WhatsApp' },
+      { name: 'nombre', label: 'Nombre', required: true, maxLength: 150 },
+      { name: 'identidad_rtn', label: 'Identidad/RTN', maxLength: 30 },
+      { name: 'telefono', label: 'Telefono', kind: 'phone', maxLength: 30 },
+      { name: 'whatsapp', label: 'WhatsApp', kind: 'phone', maxLength: 30 },
       { name: 'email', label: 'Email', type: 'email' },
       { name: 'direccion', label: 'Direccion', type: 'textarea' },
       { name: 'observaciones', label: 'Observaciones', type: 'textarea' },
@@ -66,14 +68,14 @@ export const moduleConfig = {
     ],
     fields: ({ clientes }) => [
       { name: 'cliente_id', label: 'Cliente', type: 'select', options: clientes.map((row) => ({ value: row.id, label: row.nombre })), required: true, valueType: 'number' },
-      { name: 'placa', label: 'Placa' },
-      { name: 'marca', label: 'Marca', required: true },
-      { name: 'modelo', label: 'Modelo', required: true },
-      { name: 'anio', label: 'Anio', type: 'number', min: 1900, valueType: 'number' },
-      { name: 'color', label: 'Color' },
-      { name: 'vin', label: 'VIN' },
-      { name: 'tipo_vehiculo', label: 'Tipo de vehiculo' },
-      { name: 'kilometraje_actual', label: 'Kilometraje', type: 'number', min: 0, valueType: 'number' },
+      { name: 'placa', label: 'Placa', maxLength: 20 },
+      { name: 'marca', label: 'Marca', required: true, maxLength: 80 },
+      { name: 'modelo', label: 'Modelo', required: true, maxLength: 80 },
+      { name: 'anio', label: 'Anio', type: 'number', min: 1900, max: nextYear, valueType: 'integer' },
+      { name: 'color', label: 'Color', maxLength: 50 },
+      { name: 'vin', label: 'VIN', maxLength: 80 },
+      { name: 'tipo_vehiculo', label: 'Tipo de vehiculo', maxLength: 50 },
+      { name: 'kilometraje_actual', label: 'Kilometraje', type: 'number', min: 0, valueType: 'integer' },
       { name: 'observaciones', label: 'Observaciones', type: 'textarea' },
       { name: 'estado', label: 'Estado', type: 'select', options: estadosGenerales, defaultValue: 'Activo' }
     ]
@@ -99,8 +101,8 @@ export const moduleConfig = {
       { name: 'flujo_trabajo_id', label: 'Flujo de trabajo', type: 'select', options: flujosTrabajo.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
       { name: 'fecha_entrega_estimada', label: 'Entrega estimada', type: 'datetime-local', valueType: 'date' },
       { name: 'fecha_entrega_real', label: 'Entrega real', type: 'datetime-local', valueType: 'date', hideOnCreate: true },
-      { name: 'kilometraje_ingreso', label: 'Kilometraje ingreso', type: 'number', min: 0, valueType: 'number' },
-      { name: 'motivo_visita', label: 'Motivo de visita', required: true },
+      { name: 'kilometraje_ingreso', label: 'Kilometraje ingreso', type: 'number', min: 0, valueType: 'integer' },
+      { name: 'motivo_visita', label: 'Motivo de visita', required: true, maxLength: 180 },
       { name: 'descripcion_problema', label: 'Descripcion del problema', type: 'textarea' },
       { name: 'diagnostico', label: 'Diagnostico', type: 'textarea' },
       { name: 'observaciones', label: 'Observaciones', type: 'textarea' },
@@ -121,10 +123,10 @@ export const moduleConfig = {
     ],
     fields: ({ categoriasServicio }) => [
       { name: 'categoria_servicio_id', label: 'Categoria', type: 'select', options: categoriasServicio.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
-      { name: 'nombre', label: 'Nombre', required: true },
+      { name: 'nombre', label: 'Nombre', required: true, maxLength: 150 },
       { name: 'descripcion', label: 'Descripcion', type: 'textarea' },
       { name: 'precio_sugerido', label: 'Precio sugerido', type: 'number', min: 0, step: 1, valueType: 'integer' },
-      { name: 'tiempo_estimado_minutos', label: 'Tiempo estimado min', type: 'number', min: 1, valueType: 'number' },
+      { name: 'tiempo_estimado_minutos', label: 'Tiempo estimado min', type: 'number', min: 1, valueType: 'integer' },
       { name: 'estado', label: 'Estado', type: 'select', options: estadosGenerales, defaultValue: 'Activo' }
     ]
   },
@@ -143,11 +145,11 @@ export const moduleConfig = {
     ],
     fields: ({ categoriasProducto }) => [
       { name: 'categoria_producto_id', label: 'Categoria', type: 'select', options: categoriasProducto.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
-      { name: 'codigo', label: 'Codigo' },
-      { name: 'nombre', label: 'Nombre', required: true },
-      { name: 'marca', label: 'Marca' },
+      { name: 'codigo', label: 'Codigo', maxLength: 80 },
+      { name: 'nombre', label: 'Nombre', required: true, maxLength: 150 },
+      { name: 'marca', label: 'Marca', maxLength: 120 },
       { name: 'descripcion', label: 'Descripcion', type: 'textarea' },
-      { name: 'unidad_medida', label: 'Unidad de medida', defaultValue: 'Unidad' },
+      { name: 'unidad_medida', label: 'Unidad de medida', defaultValue: 'Unidad', maxLength: 50 },
       { name: 'stock_inicial', label: 'Stock inicial', type: 'number', min: 0, valueType: 'number', hideOnEdit: true },
       { name: 'stock_minimo', label: 'Stock minimo', type: 'number', min: 0, valueType: 'number' },
       { name: 'costo_promedio', label: 'Costo promedio', type: 'number', min: 0, step: 1, valueType: 'integer' },

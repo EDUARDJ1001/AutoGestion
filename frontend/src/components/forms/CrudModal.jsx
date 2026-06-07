@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react';
 import { LoaderCircle, Save, X } from 'lucide-react';
 import { getFields, getInitialForm, moduleConfig, normalizePayload } from '../../config/moduleConfig';
 import { moduleTitles } from '../../routes/modules';
+import { validateField, validateForm } from '../../utils/validation';
 import FormField from './FormField';
 
 function CrudModal({ modal, catalogs, saving, error, onClose, onSubmit }) {
   const config = moduleConfig[modal.moduleKey];
   const fields = getFields(config, catalogs, modal.mode);
   const [form, setForm] = useState(() => getInitialForm(config, catalogs, modal.mode, modal.row));
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     setForm(getInitialForm(config, catalogs, modal.mode, modal.row));
+    setFieldErrors({});
   }, [catalogs, config, modal.mode, modal.row]);
 
   const title = modal.mode === 'create'
@@ -19,6 +22,14 @@ function CrudModal({ modal, catalogs, saving, error, onClose, onSubmit }) {
 
   const submit = (event) => {
     event.preventDefault();
+    const errors = validateForm(fields, form, modal.mode);
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length) {
+      return;
+    }
+
     onSubmit(normalizePayload(form, fields, modal.mode));
   };
 
@@ -32,14 +43,21 @@ function CrudModal({ modal, catalogs, saving, error, onClose, onSubmit }) {
           </button>
         </div>
 
-        <form className="crud-form" onSubmit={submit}>
+        <form className="crud-form" onSubmit={submit} noValidate>
           {fields.map((field) => (
             <FormField
               key={field.name}
               field={field}
               mode={modal.mode}
               value={form[field.name] ?? ''}
-              onChange={(value) => setForm((current) => ({ ...current, [field.name]: value }))}
+              error={fieldErrors[field.name]}
+              onChange={(value) => {
+                setForm((current) => ({ ...current, [field.name]: value }));
+                setFieldErrors((current) => ({
+                  ...current,
+                  [field.name]: validateField(field, value, modal.mode)
+                }));
+              }}
             />
           ))}
 

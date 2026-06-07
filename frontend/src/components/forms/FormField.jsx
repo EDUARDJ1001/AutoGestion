@@ -1,4 +1,4 @@
-function FormField({ field, mode, value, onChange }) {
+function FormField({ field, mode, value, error, onChange }) {
   const required = Boolean(field.required || (mode === 'create' && field.requiredOnCreate));
   const integerOnly = field.valueType === 'integer';
   const handleInputChange = (event) => {
@@ -18,8 +18,11 @@ function FormField({ field, mode, value, onChange }) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           required={required}
+          maxLength={field.maxLength}
+          aria-invalid={Boolean(error)}
           rows={3}
         />
+        {error ? <span className="field-error">{error}</span> : null}
       </label>
     );
   }
@@ -36,12 +39,14 @@ function FormField({ field, mode, value, onChange }) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           required={required}
+          aria-invalid={Boolean(error)}
         >
           <option value="">Sin seleccionar</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
+        {error ? <span className="field-error">{error}</span> : null}
       </label>
     );
   }
@@ -60,11 +65,15 @@ function FormField({ field, mode, value, onChange }) {
         }}
         required={required}
         min={field.min}
+        max={field.max}
         step={integerOnly ? 1 : field.step}
         inputMode={integerOnly ? 'numeric' : undefined}
         pattern={integerOnly ? '[0-9]*' : undefined}
         minLength={field.minLength}
+        maxLength={field.maxLength}
+        aria-invalid={Boolean(error)}
       />
+      {error ? <span className="field-error">{error}</span> : null}
     </label>
   );
 }

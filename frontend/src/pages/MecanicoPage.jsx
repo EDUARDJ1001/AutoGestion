@@ -13,6 +13,7 @@ import {
 import { apiRequest, assetUrl, crudRequest } from '../api/client';
 import { estadosVisita } from '../constants/app';
 import { formatDate, vehicleLabel } from '../utils/formatters';
+import { validateImageFile } from '../utils/validation';
 import ConfirmModal from '../components/forms/ConfirmModal';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
@@ -45,6 +46,8 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
   const [photoForm, setPhotoForm] = useState({ tipo: 'Avance', descripcion: '', foto: null });
   const [savingAction, setSavingAction] = useState('');
   const [confirmModal, setConfirmModal] = useState(null);
+  const [productError, setProductError] = useState('');
+  const [photoError, setPhotoError] = useState('');
 
   const filteredTrabajos = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -197,7 +200,20 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
     event.preventDefault();
     if (!detail?.visita) return;
 
+    const cantidad = Number(productForm.cantidad);
+
+    if (!productForm.producto_id) {
+      setProductError('Selecciona un producto');
+      return;
+    }
+
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+      setProductError('La cantidad debe ser un entero mayor a 0');
+      return;
+    }
+
     setSavingAction('product');
+    setProductError('');
     try {
       const payload = await crudRequest({
         path: `/mecanico/mis-trabajos/${detail.visita.id}/productos`,
@@ -205,7 +221,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
         method: 'POST',
         body: {
           producto_id: Number(productForm.producto_id),
-          cantidad: Number(productForm.cantidad),
+          cantidad,
           observaciones: productForm.observaciones || undefined
         }
       });
@@ -221,7 +237,14 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
 
   const uploadPhoto = async (event) => {
     event.preventDefault();
-    if (!detail?.visita || !photoForm.foto) return;
+    if (!detail?.visita) return;
+
+    const validationError = validateImageFile(photoForm.foto);
+
+    if (validationError) {
+      setPhotoError(validationError);
+      return;
+    }
 
     const formData = new FormData();
     formData.append('tipo', photoForm.tipo);
@@ -229,6 +252,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
     formData.append('foto', photoForm.foto);
 
     setSavingAction('photo');
+    setPhotoError('');
     try {
       const payload = await crudRequest({
         path: `/mecanico/mis-trabajos/${detail.visita.id}/fotos`,
@@ -238,6 +262,7 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
       });
       setDetail((current) => ({ ...current, fotos: payload.fotos || current.fotos }));
       setPhotoForm({ tipo: 'Avance', descripcion: '', foto: null });
+      setPhotoError('');
       event.target.reset();
       showToast('Foto cargada');
       await refreshDetail();
@@ -339,12 +364,20 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
             onBack={clearSelection}
             onEstado={updateEstado}
             onNoteChange={setNoteForm}
-            onProductChange={setProductForm}
-            onPhotoChange={setPhotoForm}
+            onProductChange={(updater) => {
+              setProductError('');
+              setProductForm(updater);
+            }}
+            onPhotoChange={(updater) => {
+              setPhotoError('');
+              setPhotoForm(updater);
+            }}
             onSaveNotes={saveNotes}
             onAddProduct={addProduct}
             onUploadPhoto={uploadPhoto}
             onUpdateEtapa={updateEtapa}
+            productError={productError}
+            photoError={photoError}
           />
         ) : null}
         </section>
@@ -374,7 +407,9 @@ function TrabajoDetalle({
   onSaveNotes,
   onAddProduct,
   onUploadPhoto,
-  onUpdateEtapa
+  onUpdateEtapa,
+  productError,
+  photoError
 }) {
   const { visita, servicios = [], productos: productosUsados = [], fotos = [], bitacora = [], etapas = [], progreso } = detail;
 
@@ -497,7 +532,7 @@ function TrabajoDetalle({
 
       <section className="mechanic-section">
         <h3>Productos usados</h3>
-        <form className="mechanic-form product-form" onSubmit={onAddProduct}>
+        <form className="mechanic-form product-form" onSubmit={onAddProduct} noValidate>
           <label className="field">
             Producto
             <select
@@ -522,6 +557,11 @@ function TrabajoDetalle({
               inputMode="numeric"
               value={productForm.cantidad}
               onChange={(event) => onProductChange((current) => ({ ...current, cantidad: event.target.value.replace(/[^\d]/g, '') }))}
+              onKeyDown={(event) => {
+                if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) {
+                  event.preventDefault();
+                }
+              }}
               required
             />
           </label>
@@ -536,6 +576,7 @@ function TrabajoDetalle({
             {savingAction === 'product' ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <PackagePlus size={18} aria-hidden="true" />}
             Registrar producto
           </button>
+          {productError ? <div className="form-error full-row">{productError}</div> : null}
         </form>
         <CompactList
           rows={productosUsados}
@@ -551,7 +592,7 @@ function TrabajoDetalle({
 
       <section className="mechanic-section">
         <h3>Fotos</h3>
-        <form className="mechanic-form photo-form" onSubmit={onUploadPhoto}>
+        <form className="mechanic-form photo-form" onSubmit={onUploadPhoto} noValidate>
           <label className="field">
             Tipo
             <select value={photoForm.tipo} onChange={(event) => onPhotoChange((current) => ({ ...current, tipo: event.target.value }))}>
@@ -581,6 +622,7 @@ function TrabajoDetalle({
             {savingAction === 'photo' ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Image size={18} aria-hidden="true" />}
             Subir foto
           </button>
+          {photoError ? <div className="form-error full-row">{photoError}</div> : null}
         </form>
         <PhotoGrid fotos={fotos} />
       </section>
