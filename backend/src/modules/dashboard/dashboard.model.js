@@ -105,11 +105,36 @@ const getIngresosRecientes = async (limit = 10) => {
 const getProgresoVisitas = async (limit = 20) => {
   const result = await query(
     `
-      SELECT *
-      FROM vista_progreso_visitas
-      WHERE estado_visita NOT IN ('Entregado'::estado_visita, 'Cancelado'::estado_visita)
-      ORDER BY alerta_sin_avance DESC, fecha_ultima_actividad ASC, visita_id DESC
-      LIMIT $1
+      WITH base AS (
+        SELECT *
+        FROM vista_progreso_visitas
+        WHERE estado_visita NOT IN ('Entregado'::estado_visita, 'Cancelado'::estado_visita)
+        ORDER BY alerta_sin_avance DESC, fecha_ultima_actividad ASC, visita_id DESC
+        LIMIT $1
+      )
+      SELECT
+        b.*,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', ve.id,
+                'nombre_etapa', ve.nombre_etapa,
+                'orden', ve.orden,
+                'estado', ve.estado,
+                'fecha_inicio', ve.fecha_inicio,
+                'fecha_fin', ve.fecha_fin,
+                'observaciones', ve.observaciones
+              )
+              ORDER BY ve.orden ASC, ve.id ASC
+            )
+            FROM visita_etapas ve
+            WHERE ve.visita_id = b.visita_id
+          ),
+          '[]'::json
+        ) AS etapas
+      FROM base b
+      ORDER BY b.alerta_sin_avance DESC, b.fecha_ultima_actividad ASC, b.visita_id DESC
     `,
     [limit]
   );

@@ -26,7 +26,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -556,6 +558,211 @@ td {
 .progress-card-warning .progress-track span,
 .stage-progress-warning .progress-track span {
   background: #ba4f54;
+}
+
+.timeline-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.timeline-heading span {
+  color: #657484;
+  font-size: 13px;
+}
+
+.timeline-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(150px, 190px));
+  gap: 10px;
+  align-items: center;
+}
+
+.timeline-filters select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #ccd6df;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: #263745;
+  background: #ffffff;
+}
+
+.timeline-search {
+  width: 100%;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.timeline-card-warning {
+  border-color: #e9b6b8;
+  background: #fff6f6;
+  box-shadow: inset 4px 0 0 #ba4f54;
+}
+
+.timeline-card-header,
+.timeline-card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.timeline-card-header {
+  align-items: flex-start;
+}
+
+.timeline-card-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.timeline-card h3,
+.timeline-card p {
+  margin: 0;
+}
+
+.timeline-card h3 {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.timeline-card p,
+.timeline-card-footer {
+  color: #657484;
+  font-size: 13px;
+}
+
+.timeline-card-header strong {
+  flex: 0 0 auto;
+  color: #265c7b;
+  font-size: 24px;
+}
+
+.timeline-card-warning .timeline-card-header strong {
+  color: #ba4f54;
+}
+
+.timeline-status-pill,
+.timeline-alert-pill {
+  width: fit-content;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.timeline-status-pill {
+  color: #1f603c;
+  background: #effaf3;
+}
+
+.timeline-alert-pill {
+  color: #9c2f32;
+  background: #fff1f1;
+}
+
+.timeline-track {
+  height: 10px;
+}
+
+.timeline-steps {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(118px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.timeline-step {
+  position: relative;
+  min-height: 104px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  background: #f7f9fb;
+}
+
+.timeline-step span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #657484;
+  background: #e6ecf1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.timeline-step strong,
+.timeline-step small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline-step strong {
+  color: #263745;
+  font-size: 13px;
+}
+
+.timeline-step small {
+  color: #657484;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.timeline-step-en-proceso {
+  border-color: #9cc4d7;
+  background: #eef7fb;
+  box-shadow: inset 0 4px 0 #265c7b;
+}
+
+.timeline-step-en-proceso span {
+  color: #ffffff;
+  background: #265c7b;
+}
+
+.timeline-step-completado {
+  border-color: #b8dfc8;
+  background: #effaf3;
+}
+
+.timeline-step-completado span {
+  color: #ffffff;
+  background: #2f6f92;
+}
+
+.timeline-step-omitido {
+  opacity: 0.72;
+}
+
+.timeline-step-empty {
+  grid-auto-flow: row;
 }
 
 .table-action {
@@ -1119,6 +1326,20 @@ td {
     flex-direction: column;
   }
 
+  .timeline-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .timeline-search {
+    grid-column: 1 / -1;
+  }
+
+  .timeline-card-header,
+  .timeline-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .mechanic-shell {
     grid-template-columns: 1fr;
   }
@@ -1235,7 +1456,12 @@ td {
   .modal-actions .primary-button,
   .modal-actions .secondary-button,
   .toolbar .primary-button,
-  .search-box {
+  .search-box,
+  .timeline-filters {
     width: 100%;
+  }
+
+  .timeline-filters {
+    grid-template-columns: 1fr;
   }
 }
