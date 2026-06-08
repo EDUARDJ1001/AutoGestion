@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu, RefreshCcw } from 'lucide-react';
-import { crudRequest, isForbiddenError, isSessionError } from './api/client';
+import { apiRequest, crudRequest, isForbiddenError, isSessionError } from './api/client';
 import LoginScreen from './components/auth/LoginScreen';
 import ConfirmModal from './components/forms/ConfirmModal';
 import CrudModal from './components/forms/CrudModal';
 import StatusModal from './components/forms/StatusModal';
 import Sidebar from './components/layout/Sidebar';
+import NotificationCenter from './components/ui/NotificationCenter';
 import Toast from './components/ui/Toast';
 import { estadosGenerales } from './constants/app';
 import { hasRole, moduleConfig } from './config/moduleConfig';
@@ -46,6 +47,10 @@ function App() {
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [authNotice, setAuthNotice] = useState('');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const visibleModules = useMemo(() => getVisibleModules(session), [session]);
 
@@ -55,6 +60,9 @@ function App() {
     setModal(null);
     setStatusModal(null);
     setConfirmModal(null);
+    setNotificationsOpen(false);
+    setNotifications([]);
+    setUnreadNotifications(0);
     setActiveModule('');
     setAuthNotice('');
   }, []);
@@ -65,6 +73,9 @@ function App() {
     setModal(null);
     setStatusModal(null);
     setConfirmModal(null);
+    setNotificationsOpen(false);
+    setNotifications([]);
+    setUnreadNotifications(0);
     setActiveModule('');
     setAuthNotice(notice);
   }, []);
@@ -89,6 +100,40 @@ function App() {
     loading,
     error
   } = useModuleData(activeModule, session, reloadKey, handleSessionExpired);
+
+  const loadNotificationSummary = useCallback(async () => {
+    if (!session?.token) return;
+
+    try {
+      const payload = await apiRequest('/notificaciones/resumen', { token: session.token });
+      setUnreadNotifications(payload.no_leidas || 0);
+    } catch (err) {
+      const message = handleRequestError(err);
+      if (!isForbiddenError(err)) {
+        setToast({ text: message, tone: 'danger' });
+        window.setTimeout(() => setToast(null), 2800);
+      }
+    }
+  }, [handleRequestError, session?.token]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!session?.token) return;
+
+    setNotificationsLoading(true);
+    try {
+      const payload = await apiRequest('/notificaciones?limit=30', { token: session.token });
+      setNotifications(payload.notificaciones || []);
+      setUnreadNotifications(payload.no_leidas || 0);
+    } catch (err) {
+      const message = handleRequestError(err);
+      if (!isForbiddenError(err)) {
+        setToast({ text: message, tone: 'danger' });
+        window.setTimeout(() => setToast(null), 2800);
+      }
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [handleRequestError, session?.token]);
 
   useEffect(() => {
     if (!session) return;
@@ -124,6 +169,15 @@ function App() {
     }
   }, [activeModule, handleSessionExpired, session, visibleModules]);
 
+  useEffect(() => {
+    if (!session) return undefined;
+
+    loadNotificationSummary();
+    const timer = window.setInterval(loadNotificationSummary, 60000);
+
+    return () => window.clearInterval(timer);
+  }, [loadNotificationSummary, session]);
+
   if (!session) {
     return (
       <LoginScreen
@@ -153,11 +207,44 @@ function App() {
       return next;
     });
     setReloadKey((current) => current + 1);
+    loadNotificationSummary();
   };
 
   const showToast = (text, tone = 'success') => {
     setToast({ text, tone });
     window.setTimeout(() => setToast(null), 2800);
+  };
+
+  const markNotificationRead = async (notificationId) => {
+    try {
+      const payload = await apiRequest(`/notificaciones/${notificationId}/leida`, {
+        token: session.token,
+        method: 'PATCH'
+      });
+      setNotifications((current) => current.map((item) => (
+        item.id === notificationId ? { ...item, leida: true, fecha_leida: new Date().toISOString() } : item
+      )));
+      setUnreadNotifications(payload.no_leidas || 0);
+    } catch (err) {
+      showToast(handleRequestError(err), 'danger');
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      const payload = await apiRequest('/notificaciones/leer-todas', {
+        token: session.token,
+        method: 'PATCH'
+      });
+      setNotifications((current) => current.map((item) => ({
+        ...item,
+        leida: true,
+        fecha_leida: item.fecha_leida || new Date().toISOString()
+      })));
+      setUnreadNotifications(payload.no_leidas || 0);
+    } catch (err) {
+      showToast(handleRequestError(err), 'danger');
+    }
   };
 
   const openCreate = (moduleKey) => {
@@ -340,6 +427,21 @@ function App() {
             <RefreshCcw size={17} aria-hidden="true" />
             Actualizar
           </button>
+          <NotificationCenter
+            open={notificationsOpen}
+            loading={notificationsLoading}
+            count={unreadNotifications}
+            notifications={notifications}
+            onToggle={() => {
+              const nextOpen = !notificationsOpen;
+              setNotificationsOpen(nextOpen);
+              if (nextOpen) loadNotifications();
+            }}
+            onClose={() => setNotificationsOpen(false)}
+            onRefresh={loadNotifications}
+            onRead={markNotificationRead}
+            onReadAll={markAllNotificationsRead}
+          />
         </header>
 
         <AppRoutes

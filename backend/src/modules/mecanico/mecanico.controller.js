@@ -1,6 +1,7 @@
 const mecanicoModel = require('./mecanico.model');
 const visitasModel = require('../visitas/visitas.model');
 const inventarioModel = require('../inventario/inventario.model');
+const notificacionesModel = require('../notificaciones/notificaciones.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
 const { cleanupUploadedFile } = require('../../middlewares/uploadMiddleware');
 
@@ -64,6 +65,10 @@ const updateEstado = async (req, res) => {
 
   if (!trabajo) {
     return errorResponse(res, 'Trabajo no encontrado o no asignado a este mecanico', undefined, 404);
+  }
+
+  if (req.body.estado === 'Finalizado') {
+    await notificacionesModel.notifyTrabajoFinalizado(trabajo);
   }
 
   return successResponse(res, 'Estado de trabajo actualizado correctamente', await enrichTrabajo(trabajo));
