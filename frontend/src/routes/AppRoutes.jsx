@@ -1,6 +1,7 @@
 import DashboardPage from '../pages/DashboardPage';
 import MecanicoPage from '../pages/MecanicoPage';
 import ModulePage from '../pages/ModulePage';
+import ReportesPage from '../pages/ReportesPage';
 
 function AppRoutes({ activeModule, ...props }) {
   if (activeModule === 'dashboard') {
@@ -9,6 +10,10 @@ function AppRoutes({ activeModule, ...props }) {
 
   if (activeModule === 'mecanico') {
     return <MecanicoPage {...props} />;
+  }
+
+  if (activeModule === 'reportes') {
+    return <ReportesPage {...props} />;
   }
 
   return <ModulePage moduleKey={activeModule} {...props} />;

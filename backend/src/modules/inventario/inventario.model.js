@@ -52,9 +52,11 @@ const VISITA_PRODUCTO_SELECT = `
   p.nombre AS producto_nombre,
   p.marca AS producto_marca,
   p.unidad_medida,
+  p.precio_referencia,
   vp.usuario_id,
   CONCAT(u.nombre, ' ', u.apellido) AS usuario_nombre,
   vp.cantidad,
+  ROUND(COALESCE(p.precio_referencia, 0) * vp.cantidad, 2) AS subtotal_referencia,
   vp.observaciones,
   vp.fecha_creacion
 `;

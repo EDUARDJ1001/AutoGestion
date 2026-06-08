@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   Car,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Users,
   UserRoundCog,
@@ -17,6 +18,7 @@ export const modules = [
   { key: 'visitas', label: 'Visitas', icon: ClipboardList, roles: ['Admin', 'Cajero'] },
   { key: 'servicios', label: 'Servicios', icon: BriefcaseBusiness, roles: ['Admin', 'Cajero'] },
   { key: 'inventario', label: 'Inventario', icon: Boxes, roles: ['Admin', 'Cajero', 'Mecanico'] },
+  { key: 'reportes', label: 'Reportes', icon: FileText, roles: ['Admin', 'Cajero'] },
   { key: 'mecanico', label: 'Panel mecanico', icon: Wrench, roles: ['Mecanico'] }
 ];
 

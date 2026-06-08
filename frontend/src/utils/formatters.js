@@ -17,6 +17,16 @@ export const formatDate = (value) => {
   }).format(new Date(value));
 };
 
+export const formatCurrency = (value) => {
+  const amount = Number(value || 0);
+
+  return new Intl.NumberFormat('es-HN', {
+    style: 'currency',
+    currency: 'HNL',
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
 export const vehicleLabel = (row) => {
   const parts = [row.marca, row.modelo].filter(Boolean).join(' ');
   return [row.placa, parts].filter(Boolean).join(' - ') || row.vehiculo || 'Sin dato';

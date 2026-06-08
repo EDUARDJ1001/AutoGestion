@@ -90,6 +90,7 @@ export const getModuleData = (moduleKey, token) => {
     visitas: '/visitas',
     servicios: '/servicios',
     inventario: '/productos',
+    reportes: '/visitas',
     mecanico: '/mecanico/mis-trabajos'
   };
 

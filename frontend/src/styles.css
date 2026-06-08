@@ -765,6 +765,195 @@ td {
   grid-auto-flow: row;
 }
 
+.reports-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.reports-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.report-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.report-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.report-preview {
+  min-height: 520px;
+  background: #edf1f5;
+}
+
+.print-document {
+  max-width: 920px;
+  min-height: 980px;
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 34px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  color: #17202a;
+  background: #ffffff;
+}
+
+.document-header,
+.document-info-grid,
+.document-signatures,
+.document-totals {
+  display: grid;
+  gap: 12px;
+}
+
+.document-header {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #17202a;
+}
+
+.document-header h2,
+.document-header p,
+.document-section h3,
+.document-text-rows p {
+  margin: 0;
+}
+
+.document-header h2 {
+  font-size: 28px;
+}
+
+.document-header > div:last-child {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.document-header strong {
+  font-size: 18px;
+}
+
+.document-header span,
+.document-header small,
+.document-info-grid span,
+.document-note {
+  color: #657484;
+}
+
+.document-info-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.document-info-grid div {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #dce3ea;
+  border-radius: 6px;
+}
+
+.document-info-grid span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.document-section {
+  display: grid;
+  gap: 10px;
+}
+
+.document-section h3 {
+  font-size: 16px;
+  border-bottom: 1px solid #dce3ea;
+  padding-bottom: 6px;
+}
+
+.document-table {
+  min-width: 0;
+  border: 1px solid #dce3ea;
+}
+
+.document-table th,
+.document-table td {
+  height: auto;
+  padding: 9px 10px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.document-table tfoot td {
+  font-weight: 800;
+  background: #f7f9fb;
+}
+
+.document-text-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.document-stage-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.document-stage-list div {
+  min-height: 66px;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #dce3ea;
+  border-radius: 6px;
+  background: #f7f9fb;
+}
+
+.document-stage-list span {
+  color: #657484;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.document-totals {
+  width: min(100%, 340px);
+  margin-left: auto;
+}
+
+.document-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 9px 0;
+  border-bottom: 1px solid #dce3ea;
+}
+
+.document-signatures {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 42px;
+  margin-top: 34px;
+}
+
+.document-signatures div {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.document-signatures span {
+  border-bottom: 1px solid #17202a;
+  min-height: 34px;
+}
+
 .table-action {
   width: 34px;
   min-height: 34px;
@@ -1340,6 +1529,15 @@ td {
     flex-direction: column;
   }
 
+  .report-form {
+    grid-template-columns: 1fr;
+  }
+
+  .document-info-grid,
+  .document-stage-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .mechanic-shell {
     grid-template-columns: 1fr;
   }
@@ -1463,5 +1661,67 @@ td {
 
   .timeline-filters {
     grid-template-columns: 1fr;
+  }
+
+  .document-header,
+  .document-info-grid,
+  .document-stage-list,
+  .document-signatures {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .no-print,
+  .sidebar,
+  .topbar,
+  .toast,
+  .scrim {
+    display: none !important;
+  }
+
+  .app-shell,
+  .main-area,
+  .reports-shell,
+  .report-preview {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    background: #ffffff;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .panel {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .print-document {
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .document-table {
+    page-break-inside: auto;
+  }
+
+  .document-table tr,
+  .document-section,
+  .document-signatures {
+    page-break-inside: avoid;
   }
 }
