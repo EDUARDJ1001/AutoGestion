@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest, isAuthError } from '../api/client';
+import { apiRequest, isSessionError } from '../api/client';
 import { stripAccents } from '../utils/formatters';
 
 const initialCatalogs = {
@@ -13,12 +13,12 @@ const initialCatalogs = {
 };
 
 const catalogRequests = [
-  ['clientes', '/clientes'],
-  ['vehiculos', '/vehiculos'],
-  ['usuarios', '/usuarios'],
-  ['categoriasServicio', '/categorias-servicio'],
-  ['categoriasProducto', '/categorias-producto'],
-  ['flujosTrabajo', '/flujos-trabajo']
+  ['clientes', '/clientes', ['Admin', 'Cajero']],
+  ['vehiculos', '/vehiculos', ['Admin', 'Cajero']],
+  ['usuarios', '/usuarios', ['Admin']],
+  ['categoriasServicio', '/categorias-servicio', ['Admin', 'Cajero']],
+  ['categoriasProducto', '/categorias-producto', ['Admin', 'Cajero', 'Mecanico']],
+  ['flujosTrabajo', '/flujos-trabajo', ['Admin', 'Cajero', 'Mecanico']]
 ];
 
 const resourceKeys = {
@@ -39,9 +39,11 @@ export const useCatalogs = (session, reloadKey, onSessionExpired) => {
 
     let ignore = false;
     const token = session.token;
+    const role = session.user?.rol;
+    const allowedRequests = catalogRequests.filter(([, , roles]) => roles.includes(role));
 
     setCatalogLoading(true);
-    Promise.allSettled(catalogRequests.map(([key, path]) => (
+    Promise.allSettled(allowedRequests.map(([key, path]) => (
       apiRequest(path, { token }).then((data) => [key, data])
     )))
       .then((results) => {
@@ -50,7 +52,7 @@ export const useCatalogs = (session, reloadKey, onSessionExpired) => {
         const next = { ...initialCatalogs };
         results.forEach((result) => {
           if (result.status !== 'fulfilled') {
-            if (isAuthError(result.reason)) {
+            if (isSessionError(result.reason)) {
               onSessionExpired?.();
             }
 

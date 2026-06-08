@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getModuleData, isAuthError } from '../api/client';
+import { getModuleData, isForbiddenError, isSessionError } from '../api/client';
 
 export const useModuleData = (activeModule, session, reloadKey, onSessionExpired) => {
   const [moduleData, setModuleData] = useState({});
@@ -21,9 +21,14 @@ export const useModuleData = (activeModule, session, reloadKey, onSessionExpired
       })
       .catch((err) => {
         if (!ignore) {
-          if (isAuthError(err)) {
+          if (isSessionError(err)) {
             onSessionExpired?.();
             setError('Sesion expirada');
+            return;
+          }
+
+          if (isForbiddenError(err)) {
+            setError('No tienes permiso para abrir este modulo');
             return;
           }
 

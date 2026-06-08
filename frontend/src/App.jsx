@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu, RefreshCcw } from 'lucide-react';
-import { crudRequest, isAuthError } from './api/client';
+import { crudRequest, isForbiddenError, isSessionError } from './api/client';
 import LoginScreen from './components/auth/LoginScreen';
 import ConfirmModal from './components/forms/ConfirmModal';
 import CrudModal from './components/forms/CrudModal';
@@ -8,17 +8,34 @@ import StatusModal from './components/forms/StatusModal';
 import Sidebar from './components/layout/Sidebar';
 import Toast from './components/ui/Toast';
 import { estadosGenerales } from './constants/app';
-import { moduleConfig } from './config/moduleConfig';
+import { hasRole, moduleConfig } from './config/moduleConfig';
 import { useCatalogs } from './hooks/useCatalogs';
 import { useModuleData } from './hooks/useModuleData';
 import AppRoutes from './routes/AppRoutes';
 import { modules, moduleTitles } from './routes/modules';
 import { normalizeVisitStatus } from './utils/formatters';
-import { clearSession, readSession } from './utils/session';
+import { clearSession, getSessionExpirationMs, readSession } from './utils/session';
+
+const getVisibleModules = (session) => {
+  const role = session?.user?.rol;
+  return modules.filter((module) => module.roles.includes(role));
+};
+
+const getDefaultModuleKey = (session) => {
+  const visible = getVisibleModules(session);
+
+  if (session?.user?.rol === 'Mecanico') {
+    return visible.find((module) => module.key === 'mecanico')?.key || visible[0]?.key || '';
+  }
+
+  return visible[0]?.key || '';
+};
+
+const initialSession = readSession();
 
 function App() {
-  const [session, setSession] = useState(readSession);
-  const [activeModule, setActiveModule] = useState('dashboard');
+  const [session, setSession] = useState(initialSession);
+  const [activeModule, setActiveModule] = useState(() => getDefaultModuleKey(initialSession));
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [search, setSearch] = useState('');
@@ -30,29 +47,36 @@ function App() {
   const [toast, setToast] = useState(null);
   const [authNotice, setAuthNotice] = useState('');
 
-  const visibleModules = useMemo(() => {
-    const role = session?.user?.rol;
-    return modules.filter((module) => module.roles.includes(role));
-  }, [session]);
+  const visibleModules = useMemo(() => getVisibleModules(session), [session]);
 
   const logout = useCallback(() => {
-    clearSession();
-    setSession(null);
-  }, []);
-
-  const handleSessionExpired = useCallback(() => {
     clearSession();
     setSession(null);
     setModal(null);
     setStatusModal(null);
     setConfirmModal(null);
-    setAuthNotice('Tu sesion expiro. Ingresa nuevamente para continuar.');
+    setActiveModule('');
+    setAuthNotice('');
+  }, []);
+
+  const handleSessionExpired = useCallback((notice = 'Tu sesion expiro. Ingresa nuevamente para continuar.') => {
+    clearSession();
+    setSession(null);
+    setModal(null);
+    setStatusModal(null);
+    setConfirmModal(null);
+    setActiveModule('');
+    setAuthNotice(notice);
   }, []);
 
   const handleRequestError = useCallback((error) => {
-    if (isAuthError(error)) {
+    if (isSessionError(error)) {
       handleSessionExpired();
       return 'Sesion expirada. Ingresa nuevamente.';
+    }
+
+    if (isForbiddenError(error)) {
+      return 'No tienes permiso para realizar esta accion.';
     }
 
     return error?.message || 'No se pudo completar la accion.';
@@ -69,14 +93,36 @@ function App() {
   useEffect(() => {
     if (!session) return;
 
-    const fallback = session.user?.rol === 'Mecanico'
-      ? visibleModules.find((module) => module.key === 'mecanico')?.key || visibleModules[0]?.key
-      : visibleModules[0]?.key;
+    const expirationMs = getSessionExpirationMs(session);
+
+    if (!expirationMs) return undefined;
+
+    const delay = expirationMs - Date.now();
+
+    if (delay <= 0) {
+      handleSessionExpired();
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => handleSessionExpired(), delay);
+
+    return () => window.clearTimeout(timer);
+  }, [handleSessionExpired, session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const fallback = getDefaultModuleKey(session);
+
+    if (!fallback) {
+      handleSessionExpired('Tu usuario no tiene un rol permitido para esta aplicacion.');
+      return;
+    }
 
     if (fallback && !visibleModules.some((module) => module.key === activeModule)) {
       setActiveModule(fallback);
     }
-  }, [activeModule, session, visibleModules]);
+  }, [activeModule, handleSessionExpired, session, visibleModules]);
 
   if (!session) {
     return (
@@ -85,12 +131,22 @@ function App() {
         onLogin={(nextSession) => {
           setAuthNotice('');
           setSession(nextSession);
+          setActiveModule(getDefaultModuleKey(nextSession));
         }}
       />
     );
   }
 
+  if (!activeModule || !visibleModules.some((module) => module.key === activeModule)) {
+    return <EmptyShell onLogout={logout} />;
+  }
+
   const refresh = () => {
+    if (!visibleModules.some((module) => module.key === activeModule)) {
+      setActiveModule(getDefaultModuleKey(session));
+      return;
+    }
+
     setModuleData((current) => {
       const next = { ...current };
       delete next[activeModule];
@@ -105,11 +161,25 @@ function App() {
   };
 
   const openCreate = (moduleKey) => {
+    const config = moduleConfig[moduleKey];
+
+    if (!visibleModules.some((module) => module.key === moduleKey) || !hasRole(session, config?.createRoles)) {
+      showToast('No tienes permiso para crear registros en este modulo', 'danger');
+      return;
+    }
+
     setFormError('');
     setModal({ mode: 'create', moduleKey, row: {} });
   };
 
   const openEdit = (moduleKey, row) => {
+    const config = moduleConfig[moduleKey];
+
+    if (!visibleModules.some((module) => module.key === moduleKey) || !hasRole(session, config?.editRoles)) {
+      showToast('No tienes permiso para editar este registro', 'danger');
+      return;
+    }
+
     setFormError('');
     setModal({ mode: 'edit', moduleKey, row });
   };
@@ -118,6 +188,17 @@ function App() {
     if (!modal) return;
 
     const config = moduleConfig[modal.moduleKey];
+
+    if (!visibleModules.some((module) => module.key === modal.moduleKey)) {
+      setFormError('No tienes permiso para este modulo');
+      return;
+    }
+
+    if (!hasRole(session, modal.mode === 'create' ? config?.createRoles : config?.editRoles)) {
+      setFormError('No tienes permiso para guardar este registro');
+      return;
+    }
+
     const method = modal.mode === 'create' ? 'POST' : 'PUT';
     const path = modal.mode === 'create' ? config.path : `${config.path}/${modal.row.id}`;
 
@@ -137,6 +218,12 @@ function App() {
 
   const executeStatusToggle = async (moduleKey, row, nextEstado) => {
     const config = moduleConfig[moduleKey];
+
+    if (!visibleModules.some((module) => module.key === moduleKey) || !hasRole(session, config?.statusRoles)) {
+      showToast('No tienes permiso para cambiar este estado', 'danger');
+      setConfirmModal(null);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -158,6 +245,12 @@ function App() {
 
   const toggleStatus = async (moduleKey, row) => {
     const config = moduleConfig[moduleKey];
+
+    if (!visibleModules.some((module) => module.key === moduleKey) || !hasRole(session, config?.statusRoles)) {
+      showToast('No tienes permiso para cambiar este estado', 'danger');
+      return;
+    }
+
     const options = config.statusOptions || estadosGenerales;
 
     if (!options.includes('Activo')) {
@@ -178,6 +271,13 @@ function App() {
     if (!statusModal) return;
 
     const config = moduleConfig[statusModal.moduleKey];
+
+    if (!visibleModules.some((module) => module.key === statusModal.moduleKey) || !hasRole(session, config?.statusRoles)) {
+      showToast('No tienes permiso para cambiar este estado', 'danger');
+      setStatusModal(null);
+      return;
+    }
+
     setSaving(true);
     try {
       await crudRequest({
@@ -205,11 +305,20 @@ function App() {
         items={visibleModules}
         activeModule={activeModule}
         onSelect={(moduleKey) => {
+          if (!visibleModules.some((module) => module.key === moduleKey)) {
+            showToast('No tienes permiso para abrir este modulo', 'danger');
+            return;
+          }
+
           setActiveModule(moduleKey);
           setSearch('');
         }}
         user={session.user}
-        onLogout={logout}
+        onLogout={() => setConfirmModal({
+          title: 'Cerrar sesion',
+          message: 'Se cerrara la sesion en este equipo.',
+          action: logout
+        })}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
       />
@@ -220,7 +329,7 @@ function App() {
             <Menu size={20} aria-hidden="true" />
           </button>
           <div>
-            <h1>{moduleTitles[activeModule]}</h1>
+            <h1>{moduleTitles[activeModule] || 'AutoGestion'}</h1>
             <p>
               {session.user?.rol === 'Mecanico'
                 ? 'Trabajo asignado'
@@ -277,6 +386,20 @@ function App() {
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
+  );
+}
+
+function EmptyShell({ onLogout }) {
+  return (
+    <main className="login-shell">
+      <section className="login-panel" aria-label="Sesion sin modulo disponible">
+        <h1>AutoGestion</h1>
+        <p>No hay un modulo disponible para este usuario.</p>
+        <button className="primary-button" type="button" onClick={onLogout}>
+          Cerrar sesion
+        </button>
+      </section>
+    </main>
   );
 }
 

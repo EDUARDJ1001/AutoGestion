@@ -70,7 +70,11 @@ export const apiRequest = async (path, { token, method = 'GET', body } = {}) => 
   }
 };
 
-export const isAuthError = (error) => [401, 403].includes(error?.status);
+export const isSessionError = (error) => error?.status === 401;
+
+export const isForbiddenError = (error) => error?.status === 403;
+
+export const isAuthError = (error) => isSessionError(error) || isForbiddenError(error);
 
 export const login = (credentials) => apiRequest('/auth/login', {
   method: 'POST',
@@ -88,6 +92,10 @@ export const getModuleData = (moduleKey, token) => {
     inventario: '/productos',
     mecanico: '/mecanico/mis-trabajos'
   };
+
+  if (!paths[moduleKey]) {
+    throw new ApiError('Modulo no disponible', { status: 403 });
+  }
 
   return apiRequest(paths[moduleKey], { token });
 };
