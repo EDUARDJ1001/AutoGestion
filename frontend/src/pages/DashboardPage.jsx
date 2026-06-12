@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Boxes, Car, Filter, Search, Settings } from 'lucide-react';
+import carImage from '../assets/car.png';
 import DataTable from '../components/ui/DataTable';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
@@ -166,8 +167,12 @@ function TimelineCard({ visita }) {
         <strong>{percent.toFixed(0)}%</strong>
       </div>
 
-      <div className="progress-track timeline-track" aria-label={`Avance ${percent}%`}>
-        <span style={{ width: `${percent}%` }} />
+      <div className="timeline-road" style={{ '--timeline-progress': `${percent}%` }}>
+        <div className="progress-track timeline-track" aria-label={`Avance ${percent}%`}>
+          <span style={{ width: `${percent}%` }} />
+        </div>
+        <img className="timeline-car-marker" src={carImage} alt="" aria-hidden="true" />
+        <span className="timeline-finish" aria-hidden="true" />
       </div>
 
       <div className="timeline-steps">

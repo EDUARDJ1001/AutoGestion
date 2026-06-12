@@ -821,6 +821,56 @@ td {
   height: 10px;
 }
 
+.timeline-road {
+  position: relative;
+  min-height: 58px;
+  display: grid;
+  align-items: end;
+  padding: 34px 42px 0 4px;
+}
+
+.timeline-road .timeline-track {
+  width: 100%;
+  box-shadow: inset 0 -1px 0 rgba(23, 32, 42, 0.08);
+}
+
+.timeline-car-marker {
+  position: absolute;
+  left: clamp(18px, var(--timeline-progress), calc(100% - 56px));
+  bottom: 10px;
+  width: 54px;
+  height: 34px;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 8px rgba(23, 32, 42, 0.2));
+  transition: left 180ms ease;
+  pointer-events: none;
+}
+
+.timeline-finish {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  width: 22px;
+  height: 46px;
+  border-left: 3px solid #17202a;
+}
+
+.timeline-finish::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 18px;
+  height: 16px;
+  border: 1px solid #17202a;
+  background:
+    linear-gradient(45deg, #17202a 25%, transparent 25% 50%, #17202a 50% 75%, transparent 75%),
+    linear-gradient(45deg, transparent 25%, #ffffff 25% 50%, transparent 50% 75%, #ffffff 75%);
+  background-size: 8px 8px;
+  background-color: #ffffff;
+}
+
 .timeline-steps {
   display: grid;
   grid-auto-flow: column;
@@ -1808,6 +1858,22 @@ td {
 
   .timeline-filters {
     grid-template-columns: 1fr;
+  }
+
+  .timeline-road {
+    min-height: 50px;
+    padding-right: 34px;
+  }
+
+  .timeline-car-marker {
+    width: 46px;
+    height: 30px;
+    bottom: 9px;
+  }
+
+  .timeline-finish {
+    right: 6px;
+    height: 40px;
   }
 
   .document-header,
