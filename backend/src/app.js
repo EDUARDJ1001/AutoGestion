@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -62,6 +63,25 @@ app.use('/api/categorias-producto', categoriasProductoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/flujos-trabajo', flujosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+
+// En produccion el backend tambien sirve el frontend ya compilado (frontend/dist),
+// de modo que un solo proceso atiende el API y la web app en el mismo puerto.
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist, { index: 'index.html', maxAge: '1h' }));
+
+  // Cualquier ruta que no sea del API ni de uploads devuelve la SPA.
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+
+    return res.sendFile(path.join(frontendDist, 'index.html'), (error) => {
+      if (error) next(error);
+    });
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);

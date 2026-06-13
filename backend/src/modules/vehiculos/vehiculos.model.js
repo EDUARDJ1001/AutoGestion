@@ -264,6 +264,15 @@ const addFoto = async (vehiculoId, foto) => {
   return findFotoById(result.rows[0].id);
 };
 
+const countFotos = async (vehiculoId) => {
+  const result = await query(
+    'SELECT COUNT(*)::int AS total FROM vehiculo_fotos WHERE vehiculo_id = $1',
+    [vehiculoId]
+  );
+
+  return result.rows[0]?.total || 0;
+};
+
 const getFotos = async (vehiculoId) => {
   const result = await query(
     `
@@ -296,5 +305,6 @@ module.exports = {
   updateEstado,
   getHistorial,
   addFoto,
+  countFotos,
   getFotos
 };

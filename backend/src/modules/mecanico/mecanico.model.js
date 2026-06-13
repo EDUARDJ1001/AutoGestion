@@ -26,7 +26,8 @@ const TRABAJO_SELECT = `
   v.estado,
   v.observaciones,
   v.fecha_ultima_actividad,
-  v.fecha_actualizacion
+  v.fecha_actualizacion,
+  COALESCE(vp.porcentaje_avance, 0) AS porcentaje_avance
 `;
 
 const assignmentFilter = `
@@ -62,6 +63,7 @@ const listMisTrabajos = async (mecanicoId, { estado, activas = true } = {}) => {
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
       LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
+      LEFT JOIN vista_progreso_visitas vp ON vp.visita_id = v.id
       WHERE ${filters.join(' AND ')}
       ORDER BY v.fecha_ingreso DESC, v.id DESC
     `,
@@ -80,6 +82,7 @@ const findTrabajoById = async (mecanicoId, visitaId) => {
       INNER JOIN vehiculos ve ON ve.id = v.vehiculo_id
       LEFT JOIN usuarios um ON um.id = v.mecanico_asignado_id
       LEFT JOIN flujos_trabajo ft ON ft.id = v.flujo_trabajo_id
+      LEFT JOIN vista_progreso_visitas vp ON vp.visita_id = v.id
       WHERE v.id = $2
         AND ${assignmentFilter}
       LIMIT 1

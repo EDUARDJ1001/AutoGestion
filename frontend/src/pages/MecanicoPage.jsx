@@ -344,6 +344,12 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
               <strong>{vehicleLabel(trabajo)}</strong>
               <span>{trabajo.cliente_nombre}</span>
               <small>{trabajo.motivo_visita || 'Sin motivo'}</small>
+              <div className="work-card-progress">
+                <div className="progress-track">
+                  <span style={{ width: `${Math.min(Number(trabajo.porcentaje_avance || 0), 100)}%` }} />
+                </div>
+                <b>{Number(trabajo.porcentaje_avance || 0).toFixed(0)}%</b>
+              </div>
             </button>
           ))}
         </div>

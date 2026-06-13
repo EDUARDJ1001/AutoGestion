@@ -3,7 +3,11 @@ import { FileDown, Printer, RefreshCcw } from 'lucide-react';
 import { apiRequest } from '../api/client';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
+import SearchSelect from '../components/ui/SearchSelect';
 import { formatCurrency, formatDate, optionLabel, vehicleLabel } from '../utils/formatters';
+import logo from '../assets/logo.svg';
+
+const TALLER_NOMBRE = 'Miguel Expert Collision';
 
 const visitDocuments = [
   { key: 'orden', label: 'Orden de trabajo' },
@@ -124,31 +128,35 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
           {isVehicleHistory ? (
             <label className="field">
               Vehiculo
-              <select value={selectedVehiculoId} onChange={(event) => setSelectedVehiculoId(event.target.value)}>
-                <option value="">Seleccionar vehiculo</option>
-                {vehiculos.map((vehiculo) => (
-                  <option key={vehiculo.id} value={vehiculo.id}>
-                    {optionLabel(vehiculo, ['placa', 'marca', 'modelo', 'cliente_nombre']) || `Vehiculo ${vehiculo.id}`}
-                  </option>
-                ))}
-              </select>
+              <SearchSelect
+                value={selectedVehiculoId}
+                onChange={setSelectedVehiculoId}
+                placeholder="Buscar vehiculo por placa o cliente"
+                emptyText="Sin vehiculos que coincidan"
+                options={vehiculos.map((vehiculo) => ({
+                  value: vehiculo.id,
+                  label: optionLabel(vehiculo, ['placa', 'marca', 'modelo', 'cliente_nombre']) || `Vehiculo ${vehiculo.id}`
+                }))}
+              />
             </label>
           ) : (
             <label className="field">
               Visita
-              <select value={selectedVisitaId} onChange={(event) => setSelectedVisitaId(event.target.value)}>
-                <option value="">Seleccionar visita</option>
-                {visitas.map((visita) => (
-                  <option key={visita.id} value={visita.id}>
-                    {[
-                      visita.id,
-                      visita.cliente_nombre,
-                      vehicleLabel(visita),
-                      visita.estado
-                    ].filter(Boolean).join(' - ')}
-                  </option>
-                ))}
-              </select>
+              <SearchSelect
+                value={selectedVisitaId}
+                onChange={setSelectedVisitaId}
+                placeholder="Buscar visita por numero o cliente"
+                emptyText="Sin visitas que coincidan"
+                options={visitas.map((visita) => ({
+                  value: visita.id,
+                  label: [
+                    `VIS-${visita.id}`,
+                    visita.cliente_nombre,
+                    vehicleLabel(visita),
+                    visita.estado
+                  ].filter(Boolean).join(' - ')
+                }))}
+              />
             </label>
           )}
 
@@ -199,9 +207,12 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
 function DocumentHeader({ title, code }) {
   return (
     <header className="document-header">
-      <div>
-        <h2>AutoGestion</h2>
-        <p>Taller automotriz</p>
+      <div className="document-brand">
+        <img src={logo} alt={`Logo ${TALLER_NOMBRE}`} className="document-logo" />
+        <div>
+          <h2>{TALLER_NOMBRE}</h2>
+          <p>Taller automotriz</p>
+        </div>
       </div>
       <div>
         <strong>{title}</strong>
@@ -312,6 +323,7 @@ function VisitDocument({ data, documentType, selectedVisita }) {
   const servicios = data.servicios || [];
   const productos = data.productos || [];
   const etapas = data.etapas || [];
+  const recepcion = data.recepcion || null;
   const totalServicios = sum(servicios, 'subtotal');
   const totalProductos = sum(productos, 'subtotal_referencia');
   const grandTotal = totalServicios + totalProductos;
@@ -336,11 +348,14 @@ function VisitDocument({ data, documentType, selectedVisita }) {
         <>
           <TextBlock title="Trabajo solicitado" rows={[
             ['Motivo', visita.motivo_visita],
+            ['Trabajo a realizar', recepcion?.trabajo_a_realizar],
             ['Problema reportado', visita.descripcion_problema],
+            ['Comentarios del cliente', recepcion?.comentarios_cliente],
             ['Entrega estimada', formatDate(visita.fecha_entrega_estimada)],
             ['Mecanico asignado', visita.mecanico_asignado_nombre],
             ['Observaciones', visita.observaciones]
           ]} />
+          <ReceptionSummary recepcion={recepcion} />
           <StageList etapas={etapas} />
           <SignatureBlock labels={['Recibido por taller', 'Cliente']} />
         </>
@@ -383,6 +398,59 @@ function VisitDocument({ data, documentType, selectedVisita }) {
         </>
       ) : null}
     </article>
+  );
+}
+
+function ReceptionSummary({ recepcion }) {
+  if (!recepcion) {
+    return (
+      <section className="document-section">
+        <h3>Recepcion del vehiculo</h3>
+        <p className="document-note">Sin checklist de recepcion registrado.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="document-section">
+      <h3>Recepcion del vehiculo</h3>
+      <InfoGrid
+        items={[
+          ['Combustible', recepcion.nivel_combustible !== null ? `${recepcion.nivel_combustible}%` : 'Sin dato'],
+          ['Recibido por', recepcion.recibido_por_nombre],
+          ['Aceptacion', recepcion.nombre_aceptacion],
+          ['Presupuesto previo', recepcion.autoriza_presupuesto_previo ? 'Si' : 'No'],
+          ['Calculo sin presupuesto', recepcion.autoriza_sin_presupuesto ? 'Si' : 'No'],
+          ['Pruebas de manejo', recepcion.autoriza_pruebas ? 'Si' : 'No']
+        ]}
+      />
+      <DocumentChecklist
+        sections={[
+          ['Exteriores', recepcion.exteriores],
+          ['Interiores', recepcion.interiores],
+          ['Accesorios', recepcion.accesorios],
+          ['Componentes mecanicos', recepcion.componentes_mecanicos]
+        ]}
+      />
+      <p className="document-note">
+        Condiciones aceptadas: {recepcion.acepta_condiciones ? 'Si' : 'No'}
+      </p>
+    </section>
+  );
+}
+
+function DocumentChecklist({ sections }) {
+  return (
+    <div className="document-checklist-grid">
+      {sections.map(([title, items]) => (
+        <div key={title}>
+          <strong>{title}</strong>
+          {Object.entries(items || {}).length ? Object.entries(items).map(([label, checked]) => (
+            <span key={label}>{checked ? '[x]' : '[ ]'} {label}</span>
+          )) : <span>Sin datos</span>}
+        </div>
+      ))}
+    </div>
   );
 }
 

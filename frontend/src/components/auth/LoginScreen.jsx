@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Gauge, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { login } from '../../api/client';
+import logoImage from '../../assets/logo.svg';
 import { saveSession } from '../../utils/session';
 
 function LoginScreen({ notice, onLogin }) {
@@ -28,11 +29,10 @@ function LoginScreen({ notice, onLogin }) {
   return (
     <main className="login-shell">
       <section className="login-panel" aria-label="Inicio de sesion">
-        <div className="brand-mark">
-          <Gauge size={34} aria-hidden="true" />
+        <div className="brand-mark brand-mark-logo">
+          <img src={logoImage} alt="Miguel Expert Collision" />
         </div>
-        <h1>AutoGestion</h1>
-        <p>Acceso operativo del taller</p>
+        <h2>Acceso operativo del taller</h2>
 
         <form className="login-form" onSubmit={submit}>
           {notice ? <div className="form-notice">{notice}</div> : null}

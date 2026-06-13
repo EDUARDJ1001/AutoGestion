@@ -169,11 +169,14 @@ const getHistorial = async (req, res) => {
   });
 };
 
+const MAX_FOTOS_VEHICULO = 6;
+
 const addFoto = async (req, res) => {
   const vehiculoId = Number(req.params.id);
   const vehiculo = await vehiculosModel.findById(vehiculoId);
 
   if (!vehiculo) {
+    cleanupUploadedFile(req.file);
     return errorResponse(res, 'Vehiculo no encontrado', undefined, 404);
   }
 
@@ -181,19 +184,36 @@ const addFoto = async (req, res) => {
     return errorResponse(res, 'La foto es requerida', undefined, 400);
   }
 
-  const foto = await vehiculosModel.addFoto(vehiculoId, {
-    tipo: req.body.tipo || 'Vehículo',
-    url_archivo: `/uploads/vehiculos/${req.file.filename}`,
-    nombre_archivo: req.file.originalname,
-    descripcion: normalizeNullableString(req.body.descripcion),
-    subido_por: req.user.id
-  });
-  const fotos = await vehiculosModel.getFotos(vehiculoId);
+  const totalFotos = await vehiculosModel.countFotos(vehiculoId);
 
-  return successResponse(res, 'Foto de vehiculo cargada correctamente', {
-    foto,
-    fotos
-  }, 201);
+  if (totalFotos >= MAX_FOTOS_VEHICULO) {
+    cleanupUploadedFile(req.file);
+    return errorResponse(res, `Un vehiculo admite un maximo de ${MAX_FOTOS_VEHICULO} fotos`, undefined, 409);
+  }
+
+  try {
+    const foto = await vehiculosModel.addFoto(vehiculoId, {
+      tipo: req.body.tipo || 'Vehículo',
+      url_archivo: `/uploads/vehiculos/${req.file.filename}`,
+      nombre_archivo: req.file.originalname,
+      descripcion: normalizeNullableString(req.body.descripcion),
+      subido_por: req.user.id
+    });
+    const fotos = await vehiculosModel.getFotos(vehiculoId);
+
+    return successResponse(res, 'Foto de vehiculo cargada correctamente', {
+      foto,
+      fotos
+    }, 201);
+  } catch (error) {
+    cleanupUploadedFile(req.file);
+
+    if (error.code === '23514') {
+      return errorResponse(res, `Un vehiculo admite un maximo de ${MAX_FOTOS_VEHICULO} fotos`, undefined, 409);
+    }
+
+    throw error;
+  }
 };
 
 module.exports = {

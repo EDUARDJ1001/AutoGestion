@@ -1,6 +1,9 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-export const API_ORIGIN = new URL(API_URL).origin;
+// Soporta tanto URL absoluta (http://host:4000/api) como relativa (/api).
+// Para la relativa, el origen es el del propio navegador (mismo equipo que sirve la app).
+const apiOriginBase = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000';
+export const API_ORIGIN = new URL(API_URL, apiOriginBase).origin;
 
 export class ApiError extends Error {
   constructor(message, { status, payload, cause } = {}) {
@@ -88,6 +91,7 @@ export const getModuleData = (moduleKey, token) => {
     clientes: '/clientes',
     vehiculos: '/vehiculos',
     visitas: '/visitas',
+    recepcion: '/visitas/activas',
     servicios: '/servicios',
     inventario: '/productos',
     reportes: '/visitas',

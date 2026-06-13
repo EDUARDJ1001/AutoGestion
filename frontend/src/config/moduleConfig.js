@@ -59,6 +59,14 @@ export const moduleConfig = {
     createRoles: ['Admin', 'Cajero'],
     editRoles: ['Admin', 'Cajero'],
     statusRoles: ['Admin', 'Cajero'],
+    imageUpload: {
+      max: 6,
+      label: 'Fotos del vehiculo',
+      hint: 'Hasta 6 imagenes (JPG, PNG o WebP, max 5 MB c/u)',
+      uploadPath: (id) => `/vehiculos/${id}/fotos`,
+      tipo: 'Vehículo',
+      resultKey: 'vehiculo'
+    },
     columns: [
       ['placa', 'Placa'],
       ['cliente_nombre', 'Cliente'],

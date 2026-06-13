@@ -1,4 +1,5 @@
-import { Gauge, LogOut, ShieldCheck, X } from 'lucide-react';
+import { LogOut, ShieldCheck, X } from 'lucide-react';
+import logoImage from '../../assets/logo.svg';
 
 function Sidebar({ items, activeModule, onSelect, user, onLogout, open, onClose }) {
   return (
@@ -6,10 +7,12 @@ function Sidebar({ items, activeModule, onSelect, user, onLogout, open, onClose 
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <div className="app-lockup">
-            <span className="app-icon"><Gauge size={24} aria-hidden="true" /></span>
+            <span className="app-icon app-icon-logo">
+              <img src={logoImage} alt="Miguel Expert Collision" />
+            </span>
             <div>
-              <strong>AutoGestion</strong>
-              <small>Taller</small>
+              <strong>Miguel Expert Collision</strong>
+              <small>Taller Automotriz</small>
             </div>
           </div>
           <button className="icon-button mobile-only" type="button" onClick={onClose} aria-label="Cerrar menu">

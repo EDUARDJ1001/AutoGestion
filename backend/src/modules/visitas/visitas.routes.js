@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const visitasController = require('./visitas.controller');
+const recepcionesController = require('./recepciones.controller');
 const asyncHandler = require('../../utils/asyncHandler');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const roleMiddleware = require('../../middlewares/roleMiddleware');
@@ -97,6 +98,15 @@ router.get(
 );
 
 router.get(
+  '/:id/recepcion',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido')
+  ],
+  validateRequest,
+  asyncHandler(recepcionesController.getRecepcion)
+);
+
+router.get(
   '/:id',
   [
     param('id').isInt({ min: 1 }).withMessage('ID invalido')
@@ -128,6 +138,30 @@ router.patch(
   ],
   validateRequest,
   asyncHandler(visitasController.updateEstado)
+);
+
+router.put(
+  '/:id/recepcion',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('nivel_combustible').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0, max: 100 }).withMessage('nivel_combustible debe estar entre 0 y 100'),
+    body('exteriores').optional().isObject().withMessage('exteriores debe ser un objeto'),
+    body('interiores').optional().isObject().withMessage('interiores debe ser un objeto'),
+    body('accesorios').optional().isObject().withMessage('accesorios debe ser un objeto'),
+    body('componentes_mecanicos').optional().isObject().withMessage('componentes_mecanicos debe ser un objeto'),
+    body('trabajo_a_realizar').optional({ nullable: true, checkFalsy: true }).trim(),
+    body('comentarios_cliente').optional({ nullable: true, checkFalsy: true }).trim(),
+    body('autoriza_presupuesto_previo').optional().isBoolean().withMessage('autoriza_presupuesto_previo debe ser booleano'),
+    body('autoriza_sin_presupuesto').optional().isBoolean().withMessage('autoriza_sin_presupuesto debe ser booleano'),
+    body('autoriza_pruebas').optional().isBoolean().withMessage('autoriza_pruebas debe ser booleano'),
+    body('acepta_condiciones').optional().isBoolean().withMessage('acepta_condiciones debe ser booleano'),
+    body('nombre_aceptacion').optional({ nullable: true, checkFalsy: true }).isLength({ max: 150 }).withMessage('nombre_aceptacion no puede superar 150 caracteres'),
+    body('firma_cliente').optional({ nullable: true, checkFalsy: true }).trim(),
+    body('recibido_por').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('recibido_por debe ser entero'),
+    body('fecha_recepcion').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('fecha_recepcion invalida')
+  ],
+  validateRequest,
+  asyncHandler(recepcionesController.saveRecepcion)
 );
 
 router.post(

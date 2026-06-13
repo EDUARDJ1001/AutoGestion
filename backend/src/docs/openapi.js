@@ -237,6 +237,42 @@ const openapi = {
           }
         }
       },
+      RecepcionVisita: {
+        type: 'object',
+        properties: {
+          nivel_combustible: { type: 'integer', nullable: true, minimum: 0, maximum: 100, example: 50 },
+          exteriores: {
+            type: 'object',
+            additionalProperties: { type: 'boolean' },
+            example: { 'Unidad de luces': true, Cristales: true }
+          },
+          interiores: {
+            type: 'object',
+            additionalProperties: { type: 'boolean' },
+            example: { Radio: true, Tapetes: false }
+          },
+          accesorios: {
+            type: 'object',
+            additionalProperties: { type: 'boolean' },
+            example: { Gato: true, 'Llanta de refaccion': true }
+          },
+          componentes_mecanicos: {
+            type: 'object',
+            additionalProperties: { type: 'boolean' },
+            example: { Bateria: true, 'Filtro de aire': true }
+          },
+          trabajo_a_realizar: { type: 'string', nullable: true },
+          comentarios_cliente: { type: 'string', nullable: true },
+          autoriza_presupuesto_previo: { type: 'boolean', example: true },
+          autoriza_sin_presupuesto: { type: 'boolean', example: false },
+          autoriza_pruebas: { type: 'boolean', example: true },
+          acepta_condiciones: { type: 'boolean', example: true },
+          nombre_aceptacion: { type: 'string', nullable: true, example: 'Cliente de prueba' },
+          firma_cliente: { type: 'string', nullable: true },
+          recibido_por: { type: 'integer', nullable: true },
+          fecha_recepcion: { type: 'string', format: 'date-time', nullable: true }
+        }
+      },
       Producto: {
         type: 'object',
         required: ['nombre'],
@@ -614,6 +650,23 @@ const openapi = {
         parameters: [idParam('id', 'ID de visita')],
         requestBody: jsonBody({ $ref: '#/components/schemas/EstadoVisitaPatch' }),
         responses: { 200: success(), 404: error() }
+      }
+    },
+    '/visitas/{id}/recepcion': {
+      get: {
+        tags: ['Visitas'],
+        summary: 'Obtiene checklist de recepcion de una visita',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita')],
+        responses: { 200: success(), 404: error() }
+      },
+      put: {
+        tags: ['Visitas'],
+        summary: 'Crea o actualiza la recepcion/checklist de una visita',
+        security: authRequired,
+        parameters: [idParam('id', 'ID de visita')],
+        requestBody: jsonBody({ $ref: '#/components/schemas/RecepcionVisita' }),
+        responses: { 200: success(), 400: error(), 404: error() }
       }
     },
     '/visitas/{id}/servicios': {

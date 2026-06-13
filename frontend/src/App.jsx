@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu, RefreshCcw } from 'lucide-react';
 import { apiRequest, crudRequest, isForbiddenError, isSessionError } from './api/client';
+import logoImage from './assets/logo.svg';
 import LoginScreen from './components/auth/LoginScreen';
 import ConfirmModal from './components/forms/ConfirmModal';
 import CrudModal from './components/forms/CrudModal';
+import VehiculoModal from './components/forms/VehiculoModal';
 import StatusModal from './components/forms/StatusModal';
 import Sidebar from './components/layout/Sidebar';
 import NotificationCenter from './components/ui/NotificationCenter';
@@ -415,13 +417,18 @@ function App() {
           <button className="icon-button mobile-only" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu">
             <Menu size={20} aria-hidden="true" />
           </button>
-          <div>
-            <h1>{moduleTitles[activeModule] || 'AutoGestion'}</h1>
-            <p>
-              {session.user?.rol === 'Mecanico'
-                ? 'Trabajo asignado'
-                : catalogLoading ? 'Cargando catalogos' : 'Operacion del taller'}
-            </p>
+          <div className="topbar-brand">
+            <span className="topbar-logo">
+              <img src={logoImage} alt="Miguel Expert Collision" />
+            </span>
+            <div className="topbar-title">
+              <h1>{moduleTitles[activeModule] || 'AutoGestion'}</h1>
+              <p>
+                {session.user?.rol === 'Mecanico'
+                  ? 'Trabajo asignado'
+                  : catalogLoading ? 'Cargando catalogos' : 'Operacion del taller'}
+              </p>
+            </div>
           </div>
           <button className="secondary-button" type="button" onClick={refresh}>
             <RefreshCcw size={17} aria-hidden="true" />
@@ -461,7 +468,18 @@ function App() {
         />
       </main>
 
-      {modal ? (
+      {modal && modal.moduleKey === 'vehiculos' ? (
+        <VehiculoModal
+          modal={modal}
+          catalogs={catalogs}
+          token={session.token}
+          onClose={() => setModal(null)}
+          onSaved={refresh}
+          onRequestError={handleRequestError}
+          showToast={showToast}
+        />
+      ) : null}
+      {modal && modal.moduleKey !== 'vehiculos' ? (
         <CrudModal
           modal={modal}
           catalogs={catalogs}
@@ -495,7 +513,7 @@ function EmptyShell({ onLogout }) {
   return (
     <main className="login-shell">
       <section className="login-panel" aria-label="Sesion sin modulo disponible">
-        <h1>AutoGestion</h1>
+        <h1>MIGUEL EXPERT COLLISION</h1>
         <p>No hay un modulo disponible para este usuario.</p>
         <button className="primary-button" type="button" onClick={onLogout}>
           Cerrar sesion

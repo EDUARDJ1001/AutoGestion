@@ -1,4 +1,5 @@
 const visitasModel = require('./visitas.model');
+const recepcionesModel = require('./recepciones.model');
 const inventarioModel = require('../inventario/inventario.model');
 const flujosModel = require('../flujos/flujos.model');
 const { successResponse, errorResponse } = require('../../utils/responses');
@@ -65,11 +66,12 @@ const buildServicioAsignadoPayload = (item) => ({
 });
 
 const enrichVisita = async (visita) => {
-  const [servicios, bitacora, productos, fotos] = await Promise.all([
+  const [servicios, bitacora, productos, fotos, recepcion] = await Promise.all([
     visitasModel.getServicios(visita.id),
     visitasModel.getBitacora(visita.id),
     inventarioModel.listProductosUsadosByVisita(visita.id),
-    visitasModel.getFotos(visita.id)
+    visitasModel.getFotos(visita.id),
+    recepcionesModel.findByVisitaId(visita.id)
   ]);
   const [etapas, progreso] = await Promise.all([
     visitasModel.getEtapas(visita.id),
@@ -84,6 +86,7 @@ const enrichVisita = async (visita) => {
     servicios,
     productos,
     fotos,
+    recepcion,
     bitacora,
     etapas,
     progreso,
