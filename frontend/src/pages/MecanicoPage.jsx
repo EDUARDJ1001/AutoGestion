@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  Ban,
   Camera,
+  Check,
   ClipboardList,
   Image,
   LoaderCircle,
@@ -488,25 +490,38 @@ function TrabajoDetalle({
           </div>
         ) : null}
         <div className="stage-list">
-          {etapas.length ? etapas.map((etapa) => (
-            <article className={`stage-card stage-${String(etapa.estado).toLowerCase().replaceAll(' ', '-')}`} key={etapa.id}>
-              <div>
-                <strong>{etapa.orden}. {etapa.nombre_etapa}</strong>
-                <span>{etapa.estado}</span>
-              </div>
-              <div className="stage-actions">
-                <button type="button" onClick={() => onUpdateEtapa(etapa, 'En proceso')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
-                  En proceso
-                </button>
-                <button type="button" onClick={() => onUpdateEtapa(etapa, 'Completado')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
-                  Completado
-                </button>
-                <button type="button" onClick={() => onUpdateEtapa(etapa, 'Omitido')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
-                  Omitir
-                </button>
-              </div>
-            </article>
-          )) : <div className="compact-empty">Sin etapas inicializadas</div>}
+          {etapas.length ? etapas.map((etapa) => {
+            const esFinal = etapa.estado === 'Completado' || etapa.estado === 'Omitido';
+
+            return (
+              <article className={`stage-card stage-${String(etapa.estado).toLowerCase().replaceAll(' ', '-')}`} key={etapa.id}>
+                <div>
+                  <strong>{etapa.orden}. {etapa.nombre_etapa}</strong>
+                  {!esFinal ? <span>{etapa.estado}</span> : null}
+                </div>
+                {esFinal ? (
+                  <div className={`stage-final stage-final-${etapa.estado.toLowerCase()}`}>
+                    {etapa.estado === 'Completado'
+                      ? <Check size={16} aria-hidden="true" />
+                      : <Ban size={16} aria-hidden="true" />}
+                    {etapa.estado}
+                  </div>
+                ) : (
+                  <div className="stage-actions">
+                    <button type="button" onClick={() => onUpdateEtapa(etapa, 'En proceso')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                      En proceso
+                    </button>
+                    <button type="button" onClick={() => onUpdateEtapa(etapa, 'Completado')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                      Completado
+                    </button>
+                    <button type="button" onClick={() => onUpdateEtapa(etapa, 'Omitido')} disabled={savingAction.startsWith(`etapa:${etapa.id}:`)}>
+                      Omitir
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          }) : <div className="compact-empty">Sin etapas inicializadas</div>}
         </div>
       </section>
 

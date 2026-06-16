@@ -151,12 +151,15 @@ const addFoto = async (req, res) => {
     return errorResponse(res, 'La foto es requerida', undefined, 400);
   }
 
+  const etapaEnProcesoId = await visitasModel.findEtapaEnProcesoId(visitaId);
+
   const foto = await visitasModel.addFoto(visitaId, {
     tipo: req.body.tipo || 'Avance',
     url_archivo: `/uploads/visitas/${req.file.filename}`,
     nombre_archivo: req.file.originalname,
     descripcion: normalizeNullableString(req.body.descripcion),
-    subido_por: req.user.id
+    subido_por: req.user.id,
+    visita_etapa_id: etapaEnProcesoId
   });
   const fotos = await visitasModel.getFotos(visitaId);
 

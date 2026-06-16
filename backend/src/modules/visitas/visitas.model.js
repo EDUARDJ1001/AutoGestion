@@ -424,6 +424,22 @@ const findFotoById = async (id) => {
   return result.rows[0] || null;
 };
 
+const findEtapaEnProcesoId = async (visitaId) => {
+  const result = await query(
+    `
+      SELECT id
+      FROM visita_etapas
+      WHERE visita_id = $1
+        AND estado = 'En proceso'::estado_etapa_visita
+      ORDER BY orden ASC, id ASC
+      LIMIT 1
+    `,
+    [visitaId]
+  );
+
+  return result.rows[0]?.id || null;
+};
+
 const addFoto = async (visitaId, foto) => {
   const result = await query(
     `
@@ -433,9 +449,10 @@ const addFoto = async (visitaId, foto) => {
         url_archivo,
         nombre_archivo,
         descripcion,
-        subido_por
+        subido_por,
+        visita_etapa_id
       )
-      VALUES ($1, COALESCE($2::tipo_foto, 'Visita'::tipo_foto), $3, $4, $5, $6)
+      VALUES ($1, COALESCE($2::tipo_foto, 'Visita'::tipo_foto), $3, $4, $5, $6, $7)
       RETURNING id
     `,
     [
@@ -444,7 +461,8 @@ const addFoto = async (visitaId, foto) => {
       foto.url_archivo,
       foto.nombre_archivo || null,
       foto.descripcion || null,
-      foto.subido_por || null
+      foto.subido_por || null,
+      foto.visita_etapa_id || null
     ]
   );
 
@@ -626,6 +644,7 @@ module.exports = {
   addServicios,
   getServicios,
   getBitacora,
+  findEtapaEnProcesoId,
   addFoto,
   getFotos,
   getEtapas,

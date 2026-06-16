@@ -6,7 +6,7 @@ import ReportesPage from '../pages/ReportesPage';
 
 function AppRoutes({ activeModule, ...props }) {
   if (activeModule === 'dashboard') {
-    return <DashboardPage data={props.data} loading={props.loading} error={props.error} onRefresh={props.onRefresh} />;
+    return <DashboardPage {...props} />;
   }
 
   if (activeModule === 'mecanico') {

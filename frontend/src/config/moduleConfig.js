@@ -102,11 +102,11 @@ export const moduleConfig = {
       ['estado', 'Estado'],
       ['fecha_ingreso', 'Ingreso', formatDate]
     ],
-    fields: ({ clientes, vehiculos, mecanicos, flujosTrabajo }) => [
-      { name: 'cliente_id', label: 'Cliente', type: 'select', options: clientes.map((row) => ({ value: row.id, label: row.nombre })), required: true, valueType: 'number', hideOnEdit: true },
-      { name: 'vehiculo_id', label: 'Vehiculo', type: 'select', options: vehiculos.map((row) => ({ value: row.id, label: optionLabel(row, ['placa', 'marca', 'modelo']) || `Vehiculo ${row.id}` })), required: true, valueType: 'number', hideOnEdit: true },
-      { name: 'mecanico_asignado_id', label: 'Mecanico asignado', type: 'select', options: mecanicos.map((row) => ({ value: row.id, label: `${row.nombre} ${row.apellido}`.trim() || row.username })), valueType: 'number' },
-      { name: 'flujo_trabajo_id', label: 'Flujo de trabajo', type: 'select', options: flujosTrabajo.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
+    fields: ({ clientes, vehiculos, mecanicos, flujosTrabajo }, form = {}) => [
+      { name: 'cliente_id', label: 'Cliente', type: 'select', searchable: true, options: clientes.map((row) => ({ value: row.id, label: row.nombre })), required: true, valueType: 'number', hideOnEdit: true, resets: ['vehiculo_id'] },
+      { name: 'vehiculo_id', label: 'Vehiculo', type: 'select', searchable: true, emptyText: form.cliente_id ? 'Este cliente no tiene vehiculos' : 'Primero selecciona un cliente', options: vehiculos.filter((row) => form.cliente_id && String(row.cliente_id) === String(form.cliente_id)).map((row) => ({ value: row.id, label: optionLabel(row, ['placa', 'marca', 'modelo']) || `Vehiculo ${row.id}` })), required: true, valueType: 'number', hideOnEdit: true },
+      { name: 'mecanico_asignado_id', label: 'Mecanico asignado', type: 'select', searchable: true, options: mecanicos.map((row) => ({ value: row.id, label: `${row.nombre} ${row.apellido}`.trim() || row.username })), valueType: 'number' },
+      { name: 'flujo_trabajo_id', label: 'Flujo de trabajo', type: 'select', searchable: true, options: flujosTrabajo.map((row) => ({ value: row.id, label: row.nombre })), valueType: 'number' },
       { name: 'fecha_entrega_estimada', label: 'Entrega estimada', type: 'datetime-local', valueType: 'date' },
       { name: 'fecha_entrega_real', label: 'Entrega real', type: 'datetime-local', valueType: 'date', hideOnCreate: true },
       { name: 'kilometraje_ingreso', label: 'Kilometraje ingreso', type: 'number', min: 0, valueType: 'integer' },
@@ -179,7 +179,7 @@ export const moduleConfig = {
 
 export const getListForModule = (moduleKey, data) => data?.[moduleConfig[moduleKey]?.resourceKey] || [];
 
-export const getFields = (config, catalogs, mode) => (config.fields?.(catalogs) || [])
+export const getFields = (config, catalogs, mode, form = {}) => (config.fields?.(catalogs, form) || [])
   .filter((field) => !(mode === 'create' && field.hideOnCreate))
   .filter((field) => !(mode === 'edit' && field.hideOnEdit));
 

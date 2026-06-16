@@ -21,6 +21,8 @@ function VehiculoModal({ modal, catalogs, token, onClose, onSaved, onRequestErro
   const [existing, setExisting] = useState([]);
   const [images, setImages] = useState([]);
 
+  // Solo reinicia el wizard cuando se abre un modal distinto (no cuando cambian
+  // los catalogos por un refresh, que regresaria al usuario al paso 1).
   useEffect(() => {
     setStep(1);
     setForm(getInitialForm(config, catalogs, modal.mode, modal.row));
@@ -29,7 +31,8 @@ function VehiculoModal({ modal, catalogs, token, onClose, onSaved, onRequestErro
     setImages([]);
     setVehiculoId(modal.mode === 'edit' ? modal.row.id : null);
     setExisting([]);
-  }, [catalogs, config, modal.mode, modal.row]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal]);
 
   const loadFotos = async (id) => {
     try {

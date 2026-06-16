@@ -1,3 +1,5 @@
+import SearchSelect from '../ui/SearchSelect';
+
 function FormField({ field, mode, value, error, onChange }) {
   const required = Boolean(field.required || (mode === 'create' && field.requiredOnCreate));
   const integerOnly = field.valueType === 'integer';
@@ -21,6 +23,26 @@ function FormField({ field, mode, value, error, onChange }) {
           maxLength={field.maxLength}
           aria-invalid={Boolean(error)}
           rows={3}
+        />
+        {error ? <span className="field-error">{error}</span> : null}
+      </label>
+    );
+  }
+
+  if (field.type === 'select' && field.searchable) {
+    const options = (field.options || []).map((option) => (
+      typeof option === 'string' ? { value: option, label: option } : option
+    ));
+
+    return (
+      <label className="field">
+        {field.label}
+        <SearchSelect
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={`Buscar ${String(field.label).toLowerCase()}`}
+          emptyText={field.emptyText || 'Sin coincidencias'}
         />
         {error ? <span className="field-error">{error}</span> : null}
       </label>

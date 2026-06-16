@@ -20,6 +20,7 @@ const categoriasProductoRoutes = require('./modules/inventario/categoriasProduct
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 const flujosRoutes = require('./modules/flujos/flujos.routes');
 const notificacionesRoutes = require('./modules/notificaciones/notificaciones.routes');
+const facturasRoutes = require('./modules/facturas/facturas.routes');
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -63,6 +64,7 @@ app.use('/api/categorias-producto', categoriasProductoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/flujos-trabajo', flujosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/facturas', facturasRoutes);
 
 // En produccion el backend tambien sirve el frontend ya compilado (frontend/dist),
 // de modo que un solo proceso atiende el API y la web app en el mismo puerto.

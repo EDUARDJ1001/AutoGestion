@@ -132,7 +132,27 @@ const getProgresoVisitas = async (limit = 20) => {
             WHERE ve.visita_id = b.visita_id
           ),
           '[]'::json
-        ) AS etapas
+        ) AS etapas,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', vf.id,
+                'url_archivo', vf.url_archivo,
+                'descripcion', vf.descripcion,
+                'fecha_creacion', vf.fecha_creacion,
+                'etapa_id', vf.visita_etapa_id,
+                'etapa_nombre', vfe.nombre_etapa
+              )
+              ORDER BY vf.fecha_creacion ASC, vf.id ASC
+            )
+            FROM visita_fotos vf
+            LEFT JOIN visita_etapas vfe ON vfe.id = vf.visita_etapa_id
+            WHERE vf.visita_id = b.visita_id
+              AND vf.tipo = 'Avance'::tipo_foto
+          ),
+          '[]'::json
+        ) AS fotos_avance
       FROM base b
       ORDER BY b.alerta_sin_avance DESC, b.fecha_ultima_actividad ASC, b.visita_id DESC
     `,

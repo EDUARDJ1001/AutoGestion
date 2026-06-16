@@ -7,9 +7,11 @@ import FormField from './FormField';
 
 function CrudModal({ modal, catalogs, saving, error, onClose, onSubmit }) {
   const config = moduleConfig[modal.moduleKey];
-  const fields = getFields(config, catalogs, modal.mode);
   const [form, setForm] = useState(() => getInitialForm(config, catalogs, modal.mode, modal.row));
   const [fieldErrors, setFieldErrors] = useState({});
+  // Los campos se recalculan con el form actual para soportar opciones dependientes
+  // (ej. los vehiculos se filtran por el cliente seleccionado).
+  const fields = getFields(config, catalogs, modal.mode, form);
 
   useEffect(() => {
     setForm(getInitialForm(config, catalogs, modal.mode, modal.row));
@@ -52,11 +54,20 @@ function CrudModal({ modal, catalogs, saving, error, onClose, onSubmit }) {
               value={form[field.name] ?? ''}
               error={fieldErrors[field.name]}
               onChange={(value) => {
-                setForm((current) => ({ ...current, [field.name]: value }));
-                setFieldErrors((current) => ({
-                  ...current,
-                  [field.name]: validateField(field, value, modal.mode)
-                }));
+                setForm((current) => {
+                  const next = { ...current, [field.name]: value };
+                  if (field.resets) {
+                    field.resets.forEach((name) => { next[name] = ''; });
+                  }
+                  return next;
+                });
+                setFieldErrors((current) => {
+                  const next = { ...current, [field.name]: validateField(field, value, modal.mode) };
+                  if (field.resets) {
+                    field.resets.forEach((name) => { delete next[name]; });
+                  }
+                  return next;
+                });
               }}
             />
           ))}

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Boxes, Car, Filter, Search, Settings } from 'lucide-react';
+import { AlertTriangle, Boxes, Camera, Car, Filter, Receipt, Search, Settings } from 'lucide-react';
 import carImage from '../assets/car.png';
 import DataTable from '../components/ui/DataTable';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
+import PhotoGalleryModal from '../components/ui/PhotoGalleryModal';
+import CobroModal from '../components/forms/CobroModal';
 import { formatDate, stripAccents, vehicleLabel } from '../utils/formatters';
 
 const normalizeText = (value) => stripAccents(value).toLowerCase();
@@ -20,9 +22,11 @@ const formatLastActivity = (visita) => {
   return formatDate(visita.fecha_ultima_actividad);
 };
 
-function DashboardPage({ data, loading, error, onRefresh }) {
+function DashboardPage({ data, loading, error, onRefresh, session, showToast, onRequestError }) {
   const cards = data?.tarjetas || {};
   const progresoVisitas = data?.progreso_visitas || [];
+  const [gallery, setGallery] = useState(null);
+  const [cobroVisitaId, setCobroVisitaId] = useState(null);
   const [timelineFilters, setTimelineFilters] = useState({
     search: '',
     flujo: '',
@@ -126,7 +130,12 @@ function DashboardPage({ data, loading, error, onRefresh }) {
 
         <div className="timeline-list">
           {filteredTimeline.length ? filteredTimeline.map((visita) => (
-            <TimelineCard visita={visita} key={visita.visita_id} />
+            <TimelineCard
+              visita={visita}
+              key={visita.visita_id}
+              onOpenGallery={(payload) => setGallery(payload)}
+              onOpenCobro={(id) => setCobroVisitaId(id)}
+            />
           )) : <EmptyState text="Sin vehiculos con esos filtros" />}
         </div>
       </section>
@@ -145,14 +154,37 @@ function DashboardPage({ data, loading, error, onRefresh }) {
           ]}
         />
       </section>
+
+      <PhotoGalleryModal gallery={gallery} onClose={() => setGallery(null)} />
+      {cobroVisitaId ? (
+        <CobroModal
+          visitaId={cobroVisitaId}
+          token={session?.token}
+          onClose={() => setCobroVisitaId(null)}
+          onEmitted={onRefresh}
+          showToast={showToast}
+          onRequestError={onRequestError}
+        />
+      ) : null}
     </div>
   );
 }
 
-function TimelineCard({ visita }) {
+function TimelineCard({ visita, onOpenGallery, onOpenCobro }) {
   const etapas = visita.etapas || [];
+  const esFinalizado = visita.estado_visita === 'Finalizado';
+  const fotosAvance = visita.fotos_avance || [];
+  const fotosPorEtapa = useMemo(() => {
+    return fotosAvance.reduce((acc, foto) => {
+      if (foto.etapa_id) {
+        acc[foto.etapa_id] = (acc[foto.etapa_id] || 0) + 1;
+      }
+      return acc;
+    }, {});
+  }, [fotosAvance]);
   const percent = Math.min(Number(visita.porcentaje_avance || 0), 100);
   const vehicle = [visita.placa, visita.marca, visita.modelo].filter(Boolean).join(' - ') || 'Vehiculo sin dato';
+  const openGallery = () => onOpenGallery({ title: vehicle, fotos: fotosAvance });
 
   return (
     <article className={visita.alerta_sin_avance ? 'timeline-card timeline-card-warning' : 'timeline-card'}>
@@ -176,13 +208,39 @@ function TimelineCard({ visita }) {
       </div>
 
       <div className="timeline-steps">
-        {etapas.length ? etapas.map((etapa) => (
-          <div className={stageClass(etapa.estado)} key={etapa.id}>
-            <span>{etapa.orden}</span>
-            <strong>{etapa.nombre_etapa}</strong>
-            <small>{etapa.estado}</small>
-          </div>
-        )) : (
+        {etapas.length ? etapas.map((etapa) => {
+          const numFotos = fotosPorEtapa[etapa.id] || 0;
+          const clickable = numFotos > 0;
+          const className = `${stageClass(etapa.estado)}${clickable ? ' timeline-step-clickable' : ''}`;
+
+          return (
+            <div
+              className={className}
+              key={etapa.id}
+              {...(clickable ? {
+                role: 'button',
+                tabIndex: 0,
+                onClick: openGallery,
+                onKeyDown: (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openGallery();
+                  }
+                }
+              } : {})}
+            >
+              <span>{etapa.orden}</span>
+              <strong>{etapa.nombre_etapa}</strong>
+              <small>{etapa.estado}</small>
+              {clickable ? (
+                <em className="timeline-step-photos">
+                  <Camera size={13} aria-hidden="true" />
+                  {numFotos}
+                </em>
+              ) : null}
+            </div>
+          );
+        }) : (
           <div className="timeline-step timeline-step-empty">
             <span>0</span>
             <strong>{visita.etapa_actual || 'Sin etapas'}</strong>
@@ -195,6 +253,13 @@ function TimelineCard({ visita }) {
         <span>{visita.etapa_actual || 'Sin etapa activa'}</span>
         <span>{formatLastActivity(visita)}</span>
       </div>
+
+      {esFinalizado ? (
+        <button className="secondary-button compact-button timeline-cobro-button" type="button" onClick={() => onOpenCobro(visita.visita_id)}>
+          <Receipt size={16} aria-hidden="true" />
+          Resumen de cobro
+        </button>
+      ) : null}
     </article>
   );
 }
