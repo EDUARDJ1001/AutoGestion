@@ -1,6 +1,6 @@
-import { Pencil, Plus, Power, Search } from 'lucide-react';
+import { Info, Pencil, Plus, Power, Search } from 'lucide-react';
 import { getListForModule, hasRole, moduleConfig } from '../config/moduleConfig';
-import { moduleTitles } from '../routes/modules';
+import { moduleHints, moduleTitles } from '../routes/modules';
 import { filterRows } from '../utils/formatters';
 import DataTable from '../components/ui/DataTable';
 import EmptyState from '../components/ui/EmptyState';
@@ -45,6 +45,13 @@ function ModulePage({
         ) : null}
       </div>
 
+      {moduleHints[moduleKey] ? (
+        <p className="module-hint">
+          <Info size={15} aria-hidden="true" />
+          {moduleHints[moduleKey]}
+        </p>
+      ) : null}
+
       {loading ? <EmptyState text="Cargando datos..." /> : null}
       {error ? <ErrorState text={error} onRetry={onRefresh} /> : null}
       {!loading && !error ? (
@@ -54,12 +61,12 @@ function ModulePage({
           actions={canEdit || canStatus ? (row) => (
             <div className="row-actions">
               {canEdit ? (
-                <button className="icon-button table-action" type="button" onClick={() => onEdit(moduleKey, row)} aria-label="Editar">
+                <button className="icon-button table-action" type="button" onClick={() => onEdit(moduleKey, row)} aria-label="Editar" title="Editar">
                   <Pencil size={17} aria-hidden="true" />
                 </button>
               ) : null}
               {canStatus && row.estado ? (
-                <button className="icon-button table-action" type="button" onClick={() => onToggleStatus(moduleKey, row)} aria-label="Cambiar estado">
+                <button className="icon-button table-action" type="button" onClick={() => onToggleStatus(moduleKey, row)} aria-label="Cambiar estado" title="Activar / desactivar">
                   <Power size={17} aria-hidden="true" />
                 </button>
               ) : null}

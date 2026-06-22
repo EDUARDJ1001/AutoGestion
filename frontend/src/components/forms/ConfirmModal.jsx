@@ -8,7 +8,7 @@ function ConfirmModal({ confirm, saving, onCancel, onConfirm }) {
       <section className="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-label={confirm.title}>
         <div className="modal-header">
           <h2>{confirm.title}</h2>
-          <button className="icon-button" type="button" onClick={onCancel} aria-label="Cerrar">
+          <button className="icon-button" type="button" onClick={onCancel} aria-label="Cerrar" title="Cerrar">
             <X size={20} aria-hidden="true" />
           </button>
         </div>

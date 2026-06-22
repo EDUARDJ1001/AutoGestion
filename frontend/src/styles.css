@@ -740,6 +740,24 @@ button {
   white-space: nowrap;
 }
 
+.module-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #eef4f8;
+  border: 1px solid #d6e3ec;
+  color: #38566b;
+  font-size: 13px;
+}
+
+.module-hint svg {
+  flex-shrink: 0;
+  color: #2f6f92;
+}
+
 .form-error,
 .form-notice,
 .empty-danger {

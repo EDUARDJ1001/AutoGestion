@@ -7,7 +7,7 @@ function StatusModal({ statusModal, saving, onChange, onClose, onSubmit }) {
       <section className="modal-panel status-panel" role="dialog" aria-modal="true" aria-label="Cambiar estado">
         <div className="modal-header">
           <h2>Cambiar estado</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar">
             <X size={20} aria-hidden="true" />
           </button>
         </div>

@@ -424,7 +424,7 @@ function TrabajoDetalle({
   return (
     <div className="work-detail-content">
       <div className="work-detail-header">
-        <button className="icon-button mobile-only" type="button" onClick={onBack} aria-label="Volver">
+        <button className="icon-button mobile-only" type="button" onClick={onBack} aria-label="Volver" title="Volver a la lista">
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
         <div>

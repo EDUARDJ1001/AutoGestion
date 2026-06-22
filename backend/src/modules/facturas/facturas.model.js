@@ -68,6 +68,48 @@ const findByVisitaId = async (visitaId) => {
   return factura;
 };
 
+const list = async ({ search } = {}) => {
+  const params = [];
+  let where = '';
+
+  if (search) {
+    params.push(`%${search}%`);
+    where = `
+      WHERE (
+        f.numero ILIKE $1
+        OR c.nombre ILIKE $1
+        OR ve.placa ILIKE $1
+        OR ve.marca ILIKE $1
+        OR ve.modelo ILIKE $1
+      )
+    `;
+  }
+
+  const result = await query(
+    `
+      SELECT
+        f.id,
+        f.numero,
+        f.total,
+        f.fecha_emision,
+        f.visita_id,
+        c.nombre AS cliente_nombre,
+        ve.placa,
+        ve.marca,
+        ve.modelo
+      FROM facturas f
+      INNER JOIN visitas vi ON vi.id = f.visita_id
+      INNER JOIN clientes c ON c.id = vi.cliente_id
+      INNER JOIN vehiculos ve ON ve.id = vi.vehiculo_id
+      ${where}
+      ORDER BY f.id DESC
+    `,
+    params
+  );
+
+  return result.rows;
+};
+
 const create = async (visitaId, { lineas, observaciones, emitidaPor }) => {
   const facturaId = await transaction(async (client) => {
     const numeroResult = await client.query(
@@ -125,5 +167,6 @@ const create = async (visitaId, { lineas, observaciones, emitidaPor }) => {
 module.exports = {
   findById,
   findByVisitaId,
+  list,
   create
 };

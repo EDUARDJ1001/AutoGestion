@@ -15,7 +15,7 @@ function Sidebar({ items, activeModule, onSelect, user, onLogout, open, onClose 
               <small>Taller Automotriz</small>
             </div>
           </div>
-          <button className="icon-button mobile-only" type="button" onClick={onClose} aria-label="Cerrar menu">
+          <button className="icon-button mobile-only" type="button" onClick={onClose} aria-label="Cerrar menu" title="Cerrar menu">
             <X size={20} aria-hidden="true" />
           </button>
         </div>
@@ -48,7 +48,7 @@ function Sidebar({ items, activeModule, onSelect, user, onLogout, open, onClose 
             <strong>{user?.nombre || user?.username}</strong>
             <small>{user?.rol}</small>
           </div>
-          <button className="icon-button" type="button" onClick={onLogout} aria-label="Cerrar sesion">
+          <button className="icon-button" type="button" onClick={onLogout} aria-label="Cerrar sesion" title="Cerrar sesion">
             <LogOut size={18} aria-hidden="true" />
           </button>
         </div>

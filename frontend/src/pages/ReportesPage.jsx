@@ -4,6 +4,7 @@ import { apiRequest } from '../api/client';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
 import SearchSelect from '../components/ui/SearchSelect';
+import FacturaDocument from '../components/ui/FacturaDocument';
 import { formatCurrency, formatDate, optionLabel, vehicleLabel } from '../utils/formatters';
 import logo from '../assets/logo.svg';
 
@@ -18,7 +19,8 @@ const visitDocuments = [
 
 const documentOptions = [
   ...visitDocuments,
-  { key: 'historial', label: 'Historial del vehiculo' }
+  { key: 'historial', label: 'Historial del vehiculo' },
+  { key: 'factura', label: 'Factura emitida' }
 ];
 
 const titleByDocument = Object.fromEntries(documentOptions.map((item) => [item.key, item.label]));
@@ -33,10 +35,13 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
   const [documentType, setDocumentType] = useState('orden');
   const [selectedVisitaId, setSelectedVisitaId] = useState('');
   const [selectedVehiculoId, setSelectedVehiculoId] = useState('');
+  const [facturas, setFacturas] = useState([]);
+  const [selectedFacturaId, setSelectedFacturaId] = useState('');
   const [reportData, setReportData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
   const isVehicleHistory = documentType === 'historial';
+  const isFactura = documentType === 'factura';
   const selectedVisita = useMemo(() => (
     visitas.find((visita) => String(visita.id) === String(selectedVisitaId))
   ), [selectedVisitaId, visitas]);
@@ -68,11 +73,48 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
   }, [onRequestError, session?.token]);
 
   useEffect(() => {
+    if (!session?.token || !isFactura) return undefined;
+
+    let ignore = false;
+    apiRequest('/facturas', { token: session.token })
+      .then((payload) => {
+        if (!ignore) setFacturas(payload.facturas || []);
+      })
+      .catch((err) => {
+        if (!ignore) onRequestError?.(err);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isFactura, onRequestError, session?.token]);
+
+  useEffect(() => {
     setReportData(null);
     setReportError('');
-  }, [documentType, selectedVehiculoId, selectedVisitaId]);
+  }, [documentType, selectedVehiculoId, selectedVisitaId, selectedFacturaId]);
 
   const generateReport = async () => {
+    if (isFactura) {
+      if (!selectedFacturaId) {
+        setReportError('Selecciona una factura');
+        return;
+      }
+
+      setReportLoading(true);
+      setReportError('');
+
+      try {
+        const payload = await apiRequest(`/facturas/${selectedFacturaId}`, { token: session.token });
+        setReportData(payload);
+      } catch (err) {
+        setReportError(onRequestError?.(err) || err.message);
+      } finally {
+        setReportLoading(false);
+      }
+      return;
+    }
+
     const selectedId = isVehicleHistory ? selectedVehiculoId : selectedVisitaId;
 
     if (!selectedId) {
@@ -125,7 +167,26 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
             </select>
           </label>
 
-          {isVehicleHistory ? (
+          {isFactura ? (
+            <label className="field">
+              Factura
+              <SearchSelect
+                value={selectedFacturaId}
+                onChange={setSelectedFacturaId}
+                placeholder="Buscar por numero, cliente o placa"
+                emptyText="Sin facturas que coincidan"
+                options={facturas.map((factura) => ({
+                  value: factura.id,
+                  label: [
+                    factura.numero,
+                    factura.cliente_nombre,
+                    [factura.placa, factura.marca, factura.modelo].filter(Boolean).join(' '),
+                    formatCurrency(factura.total)
+                  ].filter(Boolean).join(' · ')
+                }))}
+              />
+            </label>
+          ) : isVehicleHistory ? (
             <label className="field">
               Vehiculo
               <SearchSelect
@@ -186,7 +247,13 @@ function ReportesPage({ session, data, loading, error, onRefresh, onRequestError
           <EmptyState text="Selecciona un documento y genera la vista previa" />
         ) : null}
         {!reportLoading && reportData ? (
-          isVehicleHistory ? (
+          isFactura ? (
+            reportData.factura ? (
+              <FacturaDocument factura={reportData.factura} visita={reportData.visita} />
+            ) : (
+              <EmptyState text="Esta seleccion no tiene factura emitida" />
+            )
+          ) : isVehicleHistory ? (
             <VehicleHistoryDocument
               data={reportData}
               selectedVehiculo={selectedVehiculo}

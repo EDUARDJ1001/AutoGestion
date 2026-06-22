@@ -414,7 +414,7 @@ function App() {
 
       <main className="main-area">
         <header className="topbar">
-          <button className="icon-button mobile-only" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu">
+          <button className="icon-button mobile-only" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" title="Abrir menu">
             <Menu size={20} aria-hidden="true" />
           </button>
           <div className="topbar-brand">

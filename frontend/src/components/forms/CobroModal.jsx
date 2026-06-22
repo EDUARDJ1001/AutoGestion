@@ -2,10 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LoaderCircle, Plus, Printer, Receipt, Trash2, X } from 'lucide-react';
 import { apiRequest, crudRequest } from '../../api/client';
-import { formatCurrency, formatDate, vehicleLabel } from '../../utils/formatters';
-import logo from '../../assets/logo.svg';
-
-const TALLER_NOMBRE = 'Miguel Expert Collision';
+import { formatCurrency, vehicleLabel } from '../../utils/formatters';
+import FacturaDocument from '../ui/FacturaDocument';
 
 const sumByTipo = (lineas, tipo) => lineas
   .filter((linea) => linea.tipo === tipo)
@@ -113,7 +111,7 @@ function CobroModal({ visitaId, token, onClose, onEmitted, showToast, onRequestE
             <h2>Resumen de cobro</h2>
             {visita ? <span className="modal-step-indicator">{vehicleLabel(visita)} · {visita.cliente_nombre}</span> : null}
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar">
             <X size={20} aria-hidden="true" />
           </button>
         </div>
@@ -176,7 +174,7 @@ function CobroModal({ visitaId, token, onClose, onEmitted, showToast, onRequestE
                     </td>
                     <td className="cobro-subtotal">{formatCurrency((Number(linea.cantidad) || 0) * (Number(linea.precio_unitario) || 0))}</td>
                     <td>
-                      <button className="icon-button" type="button" onClick={() => removeLinea(index)} aria-label="Quitar linea">
+                      <button className="icon-button" type="button" onClick={() => removeLinea(index)} aria-label="Quitar linea" title="Quitar linea">
                         <Trash2 size={16} aria-hidden="true" />
                       </button>
                     </td>
@@ -220,71 +218,6 @@ function CobroModal({ visitaId, token, onClose, onEmitted, showToast, onRequestE
         )}
       </section>
     </div>
-  );
-}
-
-function FacturaDocument({ factura, visita }) {
-  const lineas = factura.lineas || [];
-
-  return (
-    <article className="factura-doc">
-      <header className="factura-doc-header">
-        <div className="factura-doc-brand">
-          <img src={logo} alt={TALLER_NOMBRE} />
-          <div>
-            <h1>{TALLER_NOMBRE}</h1>
-            <p>Taller de enderezado y pintura</p>
-          </div>
-        </div>
-        <div className="factura-doc-meta">
-          <strong>FACTURA</strong>
-          <span>{factura.numero}</span>
-          <small>Emitida: {formatDate(factura.fecha_emision)}</small>
-        </div>
-      </header>
-
-      <div className="factura-doc-info">
-        <div><span>Cliente</span><strong>{visita?.cliente_nombre || 'Sin dato'}</strong></div>
-        <div><span>Vehiculo</span><strong>{visita ? vehicleLabel(visita) : 'Sin dato'}</strong></div>
-        <div><span>Emitida por</span><strong>{factura.emitida_por_nombre || 'Sin dato'}</strong></div>
-      </div>
-
-      <table className="factura-doc-table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Descripcion</th>
-            <th className="num">Cant.</th>
-            <th className="num">Precio</th>
-            <th className="num">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lineas.map((linea) => (
-            <tr key={linea.id}>
-              <td>{linea.tipo}</td>
-              <td>{linea.descripcion}</td>
-              <td className="num">{Number(linea.cantidad)}</td>
-              <td className="num">{formatCurrency(linea.precio_unitario)}</td>
-              <td className="num">{formatCurrency(linea.subtotal)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="factura-doc-totals">
-        <div><span>Servicios</span><span>{formatCurrency(factura.subtotal_servicios)}</span></div>
-        <div><span>Materiales</span><span>{formatCurrency(factura.subtotal_materiales)}</span></div>
-        <div className="factura-doc-total-final"><span>Total</span><span>{formatCurrency(factura.total)}</span></div>
-      </div>
-
-      {factura.observaciones ? <p className="factura-doc-note">{factura.observaciones}</p> : null}
-
-      <div className="factura-doc-signs">
-        <div>Caja</div>
-        <div>Cliente</div>
-      </div>
-    </article>
   );
 }
 

@@ -12,6 +12,11 @@ router.use(authMiddleware);
 router.use(roleMiddleware('Admin', 'Cajero'));
 
 router.get(
+  '/',
+  asyncHandler(facturasController.listFacturas)
+);
+
+router.get(
   '/resumen/:visitaId',
   [param('visitaId').isInt({ min: 1 }).withMessage('ID de visita invalido')],
   validateRequest,

@@ -33,6 +33,11 @@ const buildBorrador = async (visitaId) => {
   return [...lineasServicios, ...lineasMateriales];
 };
 
+const listFacturas = async (req, res) => {
+  const facturas = await facturasModel.list({ search: req.query.search });
+  return successResponse(res, 'Facturas obtenidas correctamente', { facturas });
+};
+
 const getResumen = async (req, res) => {
   const visitaId = Number(req.params.visitaId);
   const visita = await visitasModel.findById(visitaId);
@@ -100,6 +105,7 @@ const getFactura = async (req, res) => {
 };
 
 module.exports = {
+  listFacturas,
   getResumen,
   emitir,
   getFactura

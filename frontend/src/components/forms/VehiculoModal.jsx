@@ -126,7 +126,7 @@ function VehiculoModal({ modal, catalogs, token, onClose, onSaved, onRequestErro
             <h2>{title}</h2>
             <span className="modal-step-indicator">Paso {step} de 2 · {step === 1 ? 'Datos' : 'Fotos'}</span>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar">
             <X size={20} aria-hidden="true" />
           </button>
         </div>

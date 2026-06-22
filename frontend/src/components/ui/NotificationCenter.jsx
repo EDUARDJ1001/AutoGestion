@@ -14,7 +14,7 @@ function NotificationCenter({
 }) {
   return (
     <div className="notification-shell no-print">
-      <button className="icon-button notification-button" type="button" onClick={onToggle} aria-label="Notificaciones">
+      <button className="icon-button notification-button" type="button" onClick={onToggle} aria-label="Notificaciones" title="Notificaciones">
         <Bell size={19} aria-hidden="true" />
         {count > 0 ? <span>{count > 99 ? '99+' : count}</span> : null}
       </button>
@@ -26,7 +26,7 @@ function NotificationCenter({
               <strong>Notificaciones</strong>
               <span>{count} sin leer</span>
             </div>
-            <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar notificaciones">
+            <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar notificaciones" title="Cerrar">
               <X size={18} aria-hidden="true" />
             </button>
           </div>

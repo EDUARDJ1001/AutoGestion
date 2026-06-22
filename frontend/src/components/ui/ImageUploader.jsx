@@ -66,7 +66,7 @@ function ImageUploader({ value = [], onChange, max = 6 }) {
           <div className="image-uploader-item" key={preview.url}>
             <div className="image-uploader-thumb">
               <img src={preview.url} alt={preview.file.name} />
-              <button type="button" onClick={() => removeAt(index)} aria-label="Quitar imagen">
+              <button type="button" onClick={() => removeAt(index)} aria-label="Quitar imagen" title="Quitar imagen">
                 <X size={14} aria-hidden="true" />
               </button>
             </div>

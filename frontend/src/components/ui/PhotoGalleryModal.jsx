@@ -21,7 +21,7 @@ function PhotoGalleryModal({ gallery, onClose }) {
             <h2>Fotos de avance</h2>
             <span className="modal-step-indicator">{gallery.title}</span>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar">
             <X size={20} aria-hidden="true" />
           </button>
         </div>

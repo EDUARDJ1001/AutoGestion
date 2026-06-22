@@ -25,3 +25,13 @@ export const modules = [
 ];
 
 export const moduleTitles = Object.fromEntries(modules.map((module) => [module.key, module.label]));
+
+// Ayuda breve por modulo: se muestra bajo la barra para orientar a usuarios nuevos.
+export const moduleHints = {
+  usuarios: 'Personal del taller y su rol. Solo el Admin puede crear o editar usuarios.',
+  clientes: 'Datos de contacto del cliente. Registra primero al cliente antes que su vehiculo.',
+  vehiculos: 'Vehiculos de cada cliente. Al registrarlo puedes adjuntar hasta 6 fotos.',
+  visitas: 'Cada ingreso al taller (orden de trabajo). Elige cliente, su vehiculo y el motivo.',
+  servicios: 'Catalogo de servicios que ofrece el taller y su precio sugerido.',
+  inventario: 'Productos y materiales en stock. El sistema avisa cuando el stock esta bajo.'
+};

@@ -217,6 +217,7 @@ function TimelineCard({ visita, onOpenGallery, onOpenCobro }) {
             <div
               className={className}
               key={etapa.id}
+              title={clickable ? 'Ver fotos de avance' : undefined}
               {...(clickable ? {
                 role: 'button',
                 tabIndex: 0,

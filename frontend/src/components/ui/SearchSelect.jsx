@@ -104,7 +104,7 @@ function SearchSelect({
           autoComplete="off"
         />
         {selected && !disabled ? (
-          <button type="button" className="search-select-clear" onClick={clearSelection} aria-label="Limpiar seleccion">
+          <button type="button" className="search-select-clear" onClick={clearSelection} aria-label="Limpiar seleccion" title="Limpiar seleccion">
             <X size={15} aria-hidden="true" />
           </button>
         ) : (
