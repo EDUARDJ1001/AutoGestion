@@ -8,13 +8,15 @@ import {
   Image,
   LoaderCircle,
   PackagePlus,
+  Plus,
   Save,
   Search,
+  Trash2,
   Wrench
 } from 'lucide-react';
 import { apiRequest, assetUrl, crudRequest } from '../api/client';
 import { estadosVisita } from '../constants/app';
-import { formatDate, vehicleLabel } from '../utils/formatters';
+import { formatCurrency, formatDate, vehicleLabel } from '../utils/formatters';
 import { validateImageFile } from '../utils/validation';
 import ConfirmModal from '../components/forms/ConfirmModal';
 import EmptyState from '../components/ui/EmptyState';
@@ -34,6 +36,13 @@ const initialProductForm = {
   observaciones: ''
 };
 
+const initialItemForm = {
+  tipo: 'Servicio',
+  descripcion: '',
+  cantidad: '1',
+  precio_sugerido: ''
+};
+
 function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onRequestError }) {
   const trabajos = data?.trabajos || [];
   const [selectedId, setSelectedId] = useState(undefined);
@@ -45,10 +54,12 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
   const [productos, setProductos] = useState([]);
   const [noteForm, setNoteForm] = useState(initialNoteForm);
   const [productForm, setProductForm] = useState(initialProductForm);
+  const [itemForm, setItemForm] = useState(initialItemForm);
   const [photoForm, setPhotoForm] = useState({ tipo: 'Avance', descripcion: '', foto: null });
   const [savingAction, setSavingAction] = useState('');
   const [confirmModal, setConfirmModal] = useState(null);
   const [productError, setProductError] = useState('');
+  const [itemError, setItemError] = useState('');
   const [photoError, setPhotoError] = useState('');
 
   const filteredTrabajos = useMemo(() => {
@@ -237,6 +248,72 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
     }
   };
 
+  const addItem = async (event) => {
+    event.preventDefault();
+    if (!detail?.visita) return;
+
+    const descripcion = itemForm.descripcion.trim();
+    const cantidad = Number(itemForm.cantidad);
+    const precio = Number(itemForm.precio_sugerido);
+
+    if (!descripcion) {
+      setItemError('Ingresa una descripcion');
+      return;
+    }
+
+    if (!(cantidad > 0)) {
+      setItemError('La cantidad debe ser mayor a 0');
+      return;
+    }
+
+    if (!(precio >= 0)) {
+      setItemError('Ingresa un precio valido');
+      return;
+    }
+
+    setSavingAction('item');
+    setItemError('');
+    try {
+      const payload = await crudRequest({
+        path: `/mecanico/mis-trabajos/${detail.visita.id}/items`,
+        token: session.token,
+        method: 'POST',
+        body: {
+          tipo: itemForm.tipo,
+          descripcion,
+          cantidad,
+          precio_sugerido: precio
+        }
+      });
+      setDetail((current) => ({ ...current, items: payload.items || current.items }));
+      setItemForm(initialItemForm);
+      showToast('Item agregado');
+    } catch (err) {
+      showToast(onRequestError?.(err) || err.message, 'danger');
+    } finally {
+      setSavingAction('');
+    }
+  };
+
+  const removeItem = async (itemId) => {
+    if (!detail?.visita) return;
+
+    setSavingAction(`item:${itemId}`);
+    try {
+      const payload = await crudRequest({
+        path: `/mecanico/mis-trabajos/${detail.visita.id}/items/${itemId}`,
+        token: session.token,
+        method: 'DELETE'
+      });
+      setDetail((current) => ({ ...current, items: payload.items || current.items }));
+      showToast('Item eliminado');
+    } catch (err) {
+      showToast(onRequestError?.(err) || err.message, 'danger');
+    } finally {
+      setSavingAction('');
+    }
+  };
+
   const uploadPhoto = async (event) => {
     event.preventDefault();
     if (!detail?.visita) return;
@@ -386,6 +463,14 @@ function MecanicoPage({ session, data, loading, error, onRefresh, showToast, onR
             onUpdateEtapa={updateEtapa}
             productError={productError}
             photoError={photoError}
+            itemForm={itemForm}
+            onItemChange={(updater) => {
+              setItemError('');
+              setItemForm(updater);
+            }}
+            onAddItem={addItem}
+            onRemoveItem={removeItem}
+            itemError={itemError}
           />
         ) : null}
         </section>
@@ -417,9 +502,14 @@ function TrabajoDetalle({
   onUploadPhoto,
   onUpdateEtapa,
   productError,
-  photoError
+  photoError,
+  itemForm,
+  onItemChange,
+  onAddItem,
+  onRemoveItem,
+  itemError
 }) {
-  const { visita, servicios = [], productos: productosUsados = [], fotos = [], bitacora = [], etapas = [], progreso } = detail;
+  const { visita, servicios = [], productos: productosUsados = [], items = [], fotos = [], bitacora = [], etapas = [], progreso } = detail;
 
   return (
     <div className="work-detail-content">
@@ -609,6 +699,83 @@ function TrabajoDetalle({
             </>
           )}
         />
+      </section>
+
+      <section className="mechanic-section">
+        <h3>Items adicionales (manual)</h3>
+        <p className="mechanic-hint">Servicio o material que no esta en el catalogo. No afecta el inventario; el precio sugerido se podra ajustar en el resumen de cobro.</p>
+        <form className="mechanic-form item-form" onSubmit={onAddItem} noValidate>
+          <label className="field">
+            Tipo
+            <select
+              value={itemForm.tipo}
+              onChange={(event) => onItemChange((current) => ({ ...current, tipo: event.target.value }))}
+            >
+              <option value="Servicio">Servicio</option>
+              <option value="Material">Material</option>
+            </select>
+          </label>
+          <label className="field">
+            Descripcion
+            <input
+              value={itemForm.descripcion}
+              onChange={(event) => onItemChange((current) => ({ ...current, descripcion: event.target.value }))}
+              maxLength={255}
+              required
+            />
+          </label>
+          <label className="field quantity-field">
+            Cantidad
+            <input
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              value={itemForm.cantidad}
+              onChange={(event) => onItemChange((current) => ({ ...current, cantidad: event.target.value.replace(/[^\d]/g, '') }))}
+              onKeyDown={(event) => { if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
+              required
+            />
+          </label>
+          <label className="field quantity-field">
+            Precio sugerido
+            <input
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={itemForm.precio_sugerido}
+              onChange={(event) => onItemChange((current) => ({ ...current, precio_sugerido: event.target.value.replace(/[^\d]/g, '') }))}
+              onKeyDown={(event) => { if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
+              required
+            />
+          </label>
+          <button className="primary-button action-button" type="submit" disabled={savingAction === 'item'}>
+            {savingAction === 'item' ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />}
+            Agregar item
+          </button>
+          {itemError ? <div className="form-error full-row">{itemError}</div> : null}
+        </form>
+        {items.length ? (
+          <div className="compact-list">
+            {items.map((item) => (
+              <div className="compact-row item-row" key={item.id}>
+                <strong>{item.descripcion}</strong>
+                <span>{item.tipo} · {Number(item.cantidad)} × {formatCurrency(item.precio_sugerido)}</span>
+                <button
+                  className="icon-button"
+                  type="button"
+                  onClick={() => onRemoveItem(item.id)}
+                  disabled={savingAction === `item:${item.id}`}
+                  aria-label="Quitar item"
+                  title="Quitar item"
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : <div className="compact-empty">Sin items adicionales</div>}
       </section>
 
       <section className="mechanic-section">

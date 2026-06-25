@@ -103,27 +103,21 @@ CREATE TABLE IF NOT EXISTS usuarios (
     fecha_actualizacion TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Usuario admin inicial
--- Password de ejemplo: admin123
--- Recomendado cambiarlo desde el sistema después del primer login.
+-- Usuarios iniciales (sembrados tal cual estan asignados, con su hash actual).
+-- Recomendado cambiar las contrasenas desde el sistema despues del primer login.
 
-INSERT INTO usuarios (
-    rol_id,
-    nombre,
-    apellido,
-    username,
-    email,
-    password_hash
-)
-SELECT
-    r.id,
-    'Administrador',
-    'General',
-    'admin',
-    'admin@taller.local',
-    crypt('admin123', gen_salt('bf'))
+INSERT INTO usuarios (rol_id, nombre, apellido, username, email, password_hash)
+SELECT r.id, 'Administrador', 'General', 'admin', 'admin@taller.local',
+       '$2a$06$YL1Ij6ARDIfbliCcmSXwlOZiqrO4Ac3GRjD2uyi3TfrOgatzt0PYS'
 FROM roles r
 WHERE r.nombre = 'Admin'
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO usuarios (rol_id, nombre, apellido, username, email, password_hash)
+SELECT r.id, 'Smoke', 'Mecanico', 'mecanico1', 'mecanico_panel_1780769586359@local.test',
+       '$2b$10$qRLT.h8d.gIfQym6ZRrDZOYkhKoXjVeZgKBoG63tG3CbJxhJvlBJK'
+FROM roles r
+WHERE r.nombre = 'Mecanico'
 ON CONFLICT (username) DO NOTHING;
 
 -- ============================================================
@@ -782,30 +776,5 @@ LEFT JOIN categorias_producto cp ON cp.id = p.categoria_producto_id
 WHERE p.stock_actual <= p.stock_minimo
   AND p.estado = 'Activo';
 
--- ============================================================
--- DATOS DE EJEMPLO OPCIONALES
--- ============================================================
-
-INSERT INTO productos (
-    categoria_producto_id, codigo, nombre, marca, unidad_medida,
-    stock_actual, stock_minimo, costo_promedio, precio_referencia
-)
-SELECT cp.id, 'ACE-20W50-001', 'Aceite 20W50', 'Genérico', 'Cuarto', 0, 5, 0, 0
-FROM categorias_producto cp WHERE cp.nombre = 'Aceites'
-ON CONFLICT (codigo) DO NOTHING;
-
-INSERT INTO productos (
-    categoria_producto_id, codigo, nombre, marca, unidad_medida,
-    stock_actual, stock_minimo, costo_promedio, precio_referencia
-)
-SELECT cp.id, 'FIL-ACE-001', 'Filtro de aceite', 'Genérico', 'Unidad', 0, 3, 0, 0
-FROM categorias_producto cp WHERE cp.nombre = 'Filtros'
-ON CONFLICT (codigo) DO NOTHING;
-
-INSERT INTO productos (
-    categoria_producto_id, codigo, nombre, marca, unidad_medida,
-    stock_actual, stock_minimo, costo_promedio, precio_referencia
-)
-SELECT cp.id, 'REF-001', 'Refrigerante', 'Genérico', 'Galón', 0, 2, 0, 0
-FROM categorias_producto cp WHERE cp.nombre = 'Refrigerantes'
-ON CONFLICT (codigo) DO NOTHING;
+-- (Sin productos de ejemplo: el inventario arranca vacio.
+--  Las categorias de producto si quedan sembradas para clasificar.)

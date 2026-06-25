@@ -67,6 +67,29 @@ router.post(
   asyncHandler(mecanicoController.addProductoUsado)
 );
 
+router.post(
+  '/mis-trabajos/:id/items',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    body('tipo').isIn(['Servicio', 'Material']).withMessage('Tipo invalido'),
+    body('descripcion').trim().notEmpty().withMessage('La descripcion es requerida').isLength({ max: 255 }).withMessage('Descripcion demasiado larga'),
+    body('cantidad').isFloat({ gt: 0 }).withMessage('cantidad debe ser mayor que 0'),
+    body('precio_sugerido').isFloat({ min: 0 }).withMessage('precio_sugerido debe ser mayor o igual a 0')
+  ],
+  validateRequest,
+  asyncHandler(mecanicoController.addItem)
+);
+
+router.delete(
+  '/mis-trabajos/:id/items/:itemId',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID invalido'),
+    param('itemId').isInt({ min: 1 }).withMessage('ID de item invalido')
+  ],
+  validateRequest,
+  asyncHandler(mecanicoController.deleteItem)
+);
+
 router.patch(
   '/mis-trabajos/:id/etapas/:etapaId',
   [

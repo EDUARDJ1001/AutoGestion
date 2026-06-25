@@ -15,9 +15,10 @@ const normalizeNullableString = (value) => {
 };
 
 const enrichTrabajo = async (trabajo) => {
-  const [servicios, productos, fotos, bitacora, etapas, progreso] = await Promise.all([
+  const [servicios, productos, items, fotos, bitacora, etapas, progreso] = await Promise.all([
     visitasModel.getServicios(trabajo.id),
     inventarioModel.listProductosUsadosByVisita(trabajo.id),
+    visitasModel.getItems(trabajo.id),
     visitasModel.getFotos(trabajo.id),
     visitasModel.getBitacora(trabajo.id),
     visitasModel.getEtapas(trabajo.id),
@@ -28,6 +29,7 @@ const enrichTrabajo = async (trabajo) => {
     visita: trabajo,
     servicios,
     productos,
+    items,
     fotos,
     bitacora,
     etapas,
@@ -169,11 +171,53 @@ const addFoto = async (req, res) => {
   }, 201);
 };
 
+const addItem = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const trabajo = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
+
+  if (!trabajo) {
+    return errorResponse(res, 'Trabajo no encontrado o no asignado a este mecanico', undefined, 404);
+  }
+
+  await visitasModel.addItem(visitaId, {
+    tipo: req.body.tipo,
+    descripcion: normalizeNullableString(req.body.descripcion),
+    cantidad: Number(req.body.cantidad),
+    precio_sugerido: Number(req.body.precio_sugerido),
+    usuario_id: req.user.id
+  });
+
+  const items = await visitasModel.getItems(visitaId);
+
+  return successResponse(res, 'Item agregado correctamente', { items }, 201);
+};
+
+const deleteItem = async (req, res) => {
+  const visitaId = Number(req.params.id);
+  const trabajo = await mecanicoModel.findTrabajoById(req.user.id, visitaId);
+
+  if (!trabajo) {
+    return errorResponse(res, 'Trabajo no encontrado o no asignado a este mecanico', undefined, 404);
+  }
+
+  const eliminado = await visitasModel.deleteItem(visitaId, Number(req.params.itemId));
+
+  if (!eliminado) {
+    return errorResponse(res, 'Item no encontrado', undefined, 404);
+  }
+
+  const items = await visitasModel.getItems(visitaId);
+
+  return successResponse(res, 'Item eliminado correctamente', { items });
+};
+
 module.exports = {
   listMisTrabajos,
   getMiTrabajo,
   updateEstado,
   updateEtapa,
   addProductoUsado,
+  addItem,
+  deleteItem,
   addFoto
 };

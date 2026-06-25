@@ -11,9 +11,10 @@ const normalizeNullableString = (value) => {
 
 // Construye las lineas propuestas a partir de los servicios y productos ya registrados.
 const buildBorrador = async (visitaId) => {
-  const [servicios, productos] = await Promise.all([
+  const [servicios, productos, items] = await Promise.all([
     visitasModel.getServicios(visitaId),
-    inventarioModel.listProductosUsadosByVisita(visitaId)
+    inventarioModel.listProductosUsadosByVisita(visitaId),
+    visitasModel.getItems(visitaId)
   ]);
 
   const lineasServicios = servicios.map((s) => ({
@@ -30,7 +31,15 @@ const buildBorrador = async (visitaId) => {
     precio_unitario: Number(p.precio_referencia) || 0
   }));
 
-  return [...lineasServicios, ...lineasMateriales];
+  // Lineas manuales que el mecanico agrego (servicio o material fuera de catalogo).
+  const lineasItems = items.map((it) => ({
+    tipo: it.tipo === 'Material' ? 'Material' : 'Servicio',
+    descripcion: it.descripcion,
+    cantidad: Number(it.cantidad) || 1,
+    precio_unitario: Number(it.precio_sugerido) || 0
+  }));
+
+  return [...lineasServicios, ...lineasItems, ...lineasMateriales];
 };
 
 const listFacturas = async (req, res) => {

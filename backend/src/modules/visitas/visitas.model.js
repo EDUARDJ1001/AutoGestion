@@ -424,6 +424,49 @@ const findFotoById = async (id) => {
   return result.rows[0] || null;
 };
 
+const getItems = async (visitaId) => {
+  const result = await query(
+    `
+      SELECT id, visita_id, tipo, descripcion, cantidad, precio_sugerido, usuario_id, fecha_creacion
+      FROM visita_items
+      WHERE visita_id = $1
+      ORDER BY id ASC
+    `,
+    [visitaId]
+  );
+
+  return result.rows;
+};
+
+const addItem = async (visitaId, item) => {
+  const result = await query(
+    `
+      INSERT INTO visita_items (visita_id, tipo, descripcion, cantidad, precio_sugerido, usuario_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
+    `,
+    [
+      visitaId,
+      item.tipo === 'Material' ? 'Material' : 'Servicio',
+      item.descripcion,
+      item.cantidad,
+      item.precio_sugerido,
+      item.usuario_id || null
+    ]
+  );
+
+  return result.rows[0].id;
+};
+
+const deleteItem = async (visitaId, itemId) => {
+  const result = await query(
+    'DELETE FROM visita_items WHERE visita_id = $1 AND id = $2 RETURNING id',
+    [visitaId, itemId]
+  );
+
+  return Boolean(result.rows[0]);
+};
+
 const findEtapaEnProcesoId = async (visitaId) => {
   const result = await query(
     `
@@ -644,6 +687,9 @@ module.exports = {
   addServicios,
   getServicios,
   getBitacora,
+  getItems,
+  addItem,
+  deleteItem,
   findEtapaEnProcesoId,
   addFoto,
   getFotos,
